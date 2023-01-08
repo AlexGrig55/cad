@@ -11,17 +11,15 @@ namespace cad
 	{
 		typedef std::wstring src_str;
 	public:
-		constexpr String() {}
-		constexpr String(uint32_t size, wchar_t ch=L' ') :src_str(size, ch) {}
-		constexpr String(const wchar_t*const str) :src_str(str){}
-		constexpr String(const String& other) :src_str(other) {}
-		constexpr String(String&& other) : src_str(other) {}
+		String() = default;
+		constexpr String(uint32_t size, wchar_t ch=L' ')noexcept :src_str(size, ch) {}
+		constexpr String(const wchar_t*const str) noexcept :src_str(str){}
+		constexpr String(const String& other) noexcept :src_str(other) {}
+		constexpr String(String&& other) noexcept: src_str(other) {}
 
 		using src_str::at;
 		using src_str::size;
 
-		using src_str::operator+=;
-		using src_str::operator=;
 		using src_str::operator[];
 
 		using src_str::back;
@@ -50,6 +48,21 @@ namespace cad
 		using src_str::starts_with;
 		using src_str::ends_with;
 
+		constexpr String& operator=(const String& val) { src_str::operator=(val); return *this; }
+		constexpr String& operator=(const wchar_t* val) { src_str::operator=(val); return *this; }
+
+		constexpr String& operator+=(const String& val) { src_str::operator+=(val); return *this; }
+		constexpr String& operator+=(const wchar_t* val) { src_str::operator+=(val); return *this; }
+
+		constexpr String operator+(const String& val) const{
+			String str; str.reserve(size() + val.size()); str = *this; str += val; return str;
+		}
+		constexpr String operator+(const wchar_t* val) const {
+			String str(*this); str += val; return str;
+		}
+
+		constexpr bool operator==(const String& val) const noexcept { return operator==(val); }
+		constexpr bool operator==(const wchar_t* val) const noexcept { return operator==(val); }
 
 		void convertToUpper(const std::locale& locale= std::locale(""));
 		void convertToLower(const std::locale& locale = std::locale(""));

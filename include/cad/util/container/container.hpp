@@ -2,7 +2,7 @@
 #include <vector>
 #include <assert.h>
 
-namespace cad::auxil
+namespace cad::util
 {
 	template <class T>
 	class Container: private std::vector<T*>

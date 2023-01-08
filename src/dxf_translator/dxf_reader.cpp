@@ -173,7 +173,7 @@ cad::Error::Code cad::DXFReader::read(const dxf_buffer& buffer) noexcept
 			codErr = readBlocks();
 			break;
 
-		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Entity].val):
+		case StringConverter::toId(DXF_DATA_NAMES[NameSec::BaseEntity].val):
 			codErr = readEntities();
 			break;
 

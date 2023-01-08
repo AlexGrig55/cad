@@ -9,10 +9,10 @@ namespace cad
 {
 	typedef std::string dxf_buffer;
 
-	class DXFBaseTranslator
+	class BaseDxfTranslator
 	{
 	public:
-		DXFBaseTranslator(DataBase* drawing)noexcept: DRAWING(drawing){};
+		BaseDxfTranslator(DataBase* drawing)noexcept: DRAWING(drawing){};
 
 		struct DXFdata
 		{
@@ -57,7 +57,7 @@ namespace cad
 			Classes,
 			Tables,
 			Blocks,
-			Entity,
+			BaseEntity,
 			Obj,
 
 			Section,

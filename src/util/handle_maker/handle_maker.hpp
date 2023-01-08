@@ -1,7 +1,7 @@
 #pragma once
 #include <assert.h>
 
-namespace cad::auxil
+namespace cad::util
 {
 	class HandleMaker
 	{

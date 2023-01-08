@@ -1,10 +1,10 @@
 #pragma once
-#include "dxf_base_translator.hpp"
+#include "base_dxf_translator.hpp"
 
 namespace cad
 {
 
-	class DXFReader :public DXFBaseTranslator
+	class DXFReader :public BaseDxfTranslator
 	{
 		size_t offset = 0;
 		size_t countBytes=0;
@@ -26,7 +26,7 @@ namespace cad
 		Error::Code readUnknown()noexcept;
 
 	public:
-		DXFReader(DataBase* drawing) : DXFBaseTranslator(drawing) {}
+		DXFReader(DataBase* drawing) : BaseDxfTranslator(drawing) {}
 
 		Error::Code read(const dxf_buffer& buffer) noexcept;
 	};
