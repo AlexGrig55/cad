@@ -10,18 +10,20 @@ namespace cad
 		enum class Code
 		{
 			NoErr,
-			NotValidPath,
+			InvalidPath,
 			OutOfMemory,
 			CannotOpenFile,
 			IOStreamReadingError,
 			IOStreamWritingError,
-			InvalidDataInFile
+			InvalidDataInFile,
+			InvalidVersion,
+			InvalidLocale
 		};
 
-		const auto getErrorText(Code code) { return arrStringErrCodes[code]; }
-
+		static auto errorText(Code code)noexcept { return arrStringErrCodes[code]; }
+		static constexpr const auto& errorsList()noexcept { return arrStringErrCodes; }
 	private:
-		static std::map< Code, std::string> arrStringErrCodes;
+		static std::map< Code, const char*> arrStringErrCodes;
 	};
 
 }

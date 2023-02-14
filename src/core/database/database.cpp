@@ -1,144 +1,250 @@
 #include <cad/core/database/database.h>
 #include <assert.h>
+#include "../../translator/translator.hpp"
+#include <cad/core/database/containers/containers.hpp>
 
-#include "../../dxf_translator/dxf_reader.h"
-#include "../../dxf_translator/dxf_writer.h"
 
-bool cad::DataBase::read() noexcept
-{
-	const int MEMORY_RESERVE_FACTOR = 2;
-	dxf_buffer buffer;
-	DXFReader reader(this);
-
-	auto sizeFile = std::filesystem::file_size(_path);
-
-	if (sizeFile * MEMORY_RESERVE_FACTOR > buffer.max_size())
-	{
-		_lastErr = Error::Code::OutOfMemory;
-		return false;
-	}
-
-	buffer.resize(sizeFile);
-
-	auto file = _wfopen(_path.wstring().c_str(), L"rb");
-	if (file==nullptr)
-	{
-		_lastErr = Error::Code::CannotOpenFile;
-		return false;
-	}
-
-	auto countReaded = fread(buffer.data(), sizeFile, 1, file);
-	fclose(file);
-
-	if (countReaded!= 1)
-	{
-		_lastErr = Error::Code::IOStreamReadingError;
-		return false;
-	}
-
-	_lastErr = reader.read(buffer);
-
-	return _lastErr== Error::Code::NoErr;
-}
-
-bool cad::DataBase::write() noexcept
-{
-	dxf_buffer buffer;
-	DXFWriter writer(this);
-	auto sizeFile = calculateApproximateFileSize();
-
-	if (sizeFile > buffer.max_size())
-	{
-		_lastErr = Error::Code::OutOfMemory;
-		return false;
-	}
-
-	buffer.resize(sizeFile);
-
-	_lastErr = writer.write(buffer);
-	sizeFile = buffer.size();
-
-	auto file = _wfopen(_path.wstring().c_str(), L"wb");
-	if (file == nullptr)
-	{
-		_lastErr = Error::Code::CannotOpenFile;
-		return false;
-	}
-
-	auto countReaded = fwrite(buffer.data(), sizeFile, 1, file);
-	auto closeStatus = fclose(file);
-
-	if (countReaded != 1|| closeStatus!=0)
-	{
-		_lastErr = Error::Code::IOStreamWritingError;
-		return false;
-	}
-
-	return _lastErr == Error::Code::NoErr;
-}
-
-void cad::DataBase::init()noexcept
+void cad::Database::init()noexcept
 {
 
 }
 
-cad::DataBase::DataBase(const std::filesystem::path& path)noexcept:
-	_path(path),
-	_dbVersion(enums::Version::V2018),
-	_isValid(true),
-	_lastErr(Error::Code::NoErr)
+bool cad::Database::isValidPath(const std::filesystem::path& path) const noexcept
 {
-	init();
-
-	if (!_path.empty())
+	try
 	{
-		if (!std::filesystem::exists(_path)|| !std::filesystem::is_regular_file(_path))
-			_lastErr = Error::Code::NotValidPath;
+		if (path.empty())
+		{
+			return false;
+		}
+		else if (path.is_absolute())
+		{
+			return std::filesystem::exists(path.parent_path());
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
 
-		if (_lastErr == Error::Code::NoErr)
-			read();
+	return true;
+}
 
-		_isValid = _lastErr == Error::Code::NoErr;
+bool cad::Database::isContainersCreated()const noexcept
+{
+	return	_variables &&
+		_classes &&
+		//_linetypes && _layers && _appids && _styles &&
+		_blocks;
+}
+
+cad::enums::Version cad::Database::version() const noexcept
+{
+	return this->variables().generalVariables().version();
+}
+
+cad::enums::Locale cad::Database::locale() const noexcept
+{
+	return this->variables().generalVariables().locale();
+}
+
+cad::Database::Database(const std::filesystem::path& path, Error::Code* err)noexcept
+{
+	std::vector<types::byte> buffer;
+	Error::Code codeErr = readFile(path, buffer);
+
+	if (codeErr== Error::Code::NoErr)
+	{
+		this->Database::Database(buffer.data(), buffer.size(), &codeErr);
+	}
+	else
+	{
+		if (err)
+			*err = codeErr;
+
+		_isValid = false;
 	}
 }
 
-size_t cad::DataBase::calculateApproximateFileSize() const noexcept
+cad::Database::Database(const types::byte* byteArrayData, size_t size, Error::Code* err) noexcept :
+	_variables(new(std::nothrow) Variables(enums::Locale::CentralEurope, enums::Version::V2018)),
+	_classes(new(std::nothrow) Classes()),
+	_blocks(new(std::nothrow) NamedContainer<Block>("BLOCKS")),
+
+	_appids(new(std::nothrow) NamedContainer<table::Appid>("APPID")),
+	_linetypes(new(std::nothrow) NamedContainer<table::Linetype>("LTYPE")),
+	_layers(new(std::nothrow) NamedContainer<table::Layer>("LAYER")),
+	_views(new(std::nothrow) NamedContainer<table::View>("VIEW")),
+	_styles(new(std::nothrow) NamedContainer<table::Style>("STYLE")),
+	_UCSes(new(std::nothrow) NamedContainer<table::UCS>("UCS")),
+	_vports(new(std::nothrow) NamedContainer<table::Vport>("VPORT")),
+	_dimstyles(new(std::nothrow) NamedContainer<table::Dimstyle>("DIMSTYLE"))
+{
+	Error::Code localErr;
+
+	if (isContainersCreated())
+	{
+		init();
+
+		localErr = readByteArray(byteArrayData, size);
+	}
+	else
+	{
+		localErr = Error::Code::OutOfMemory;
+	}
+
+	if (err)
+		*err = localErr;
+
+	_isValid = localErr == Error::Code::NoErr;
+}
+
+cad::Database::~Database() noexcept
+{
+	clearDB();
+
+	delete _variables;
+	delete _classes;
+
+	delete _linetypes; delete _layers; delete _appids; delete _styles;
+	delete _views; delete _UCSes; delete _vports; delete _dimstyles;
+
+	delete _blocks;
+
+	delete _objects;
+}
+
+size_t cad::Database::calculateApproximateFileSize() const noexcept
 {
 	size_t res = 0;
 
 
 
-	return res*2;
+	return res * 2;
 }
 
-void cad::DataBase::clearDB() noexcept
+void cad::Database::clearDB() noexcept
 {
 
 }
 
-bool cad::DataBase::save(const std::filesystem::path& path, enums::Version dbVersion, Error::Code* err) noexcept
+cad::base::Handler* cad::Database::getObjectByHandle(size_t handle) noexcept
 {
-	assert(dbVersion!=enums::Version::Unknown);
+	return nullptr;
+}
 
-	bool isOk = true;
+const cad::base::Handler* cad::Database::getObjectByHandle(size_t handle) const noexcept
+{
+	return nullptr;
+}
 
-	if (path!=_path)
-		_path = path;
+bool cad::Database::save(const std::filesystem::path& path, const options::SaveDB& options) noexcept
+{
+	std::vector<types::byte> buffer;
 
-	if(dbVersion!= _dbVersion)
-		_dbVersion = dbVersion;
-
-	isOk = std::filesystem::exists(_path.parent_path());
-
-	if (!isOk)
-		_lastErr = Error::Code::NotValidPath;
-	else
+	if (save(buffer, options))
 	{
-		isOk = write();
+		Error::Code errCode = writeFile(path, buffer);
+
+		if (options.errorHolder())
+			*options.errorHolder() = errCode;
+
+		return errCode== Error::Code::NoErr;
 	}
 
-	if (err)
-		*err = _lastErr;
+	return false;
+}
 
-    return isOk;
+bool cad::Database::save(std::vector<types::byte>& buffer, const options::SaveDB& options) noexcept
+{
+	Error::Code errCode = Error::Code::NoErr;
+
+	if (options.version() < enums::Version::Unknown)
+	{
+		if (options.locale() < enums::Locale::Unknown)
+		{
+			variables().generalVariables().setVersion(options.version());
+			variables().generalVariables().setLocale(options.locale());
+
+			errCode = writeByteArray(buffer, options->binaryMode());
+		}
+		else
+			errCode = Error::Code::InvalidLocale;
+	}
+	else
+		errCode = Error::Code::InvalidVersion;
+
+
+	if (options.errorHolder())
+		*options.errorHolder() = errCode;
+
+	return errCode == Error::Code::NoErr;
+}
+
+cad::Error::Code cad::Database::readFile(const std::filesystem::path& path,
+	std::vector<types::byte>& buffer) noexcept
+{
+	if (!isValidPath(path))
+		return Error::Code::InvalidPath;
+
+	const int MEMORY_RESERVE_FACTOR = 3;
+	auto sizeFile = std::filesystem::file_size(path);
+
+	if (sizeFile * MEMORY_RESERVE_FACTOR > buffer.max_size())
+		return Error::Code::OutOfMemory;
+
+	buffer.resize(sizeFile);
+
+	auto file = _wfopen(path.wstring().c_str(), L"rb");
+
+	if (file == nullptr)
+		return Error::Code::CannotOpenFile;
+
+	auto countReaded = fread(buffer.data(), sizeFile, 1, file);
+	fclose(file);
+
+	if (countReaded != 1)
+		return Error::Code::IOStreamReadingError;
+
+	return Error::Code::NoErr;
+}
+
+cad::Error::Code cad::Database::readByteArray(const types::byte* byteArrayData, size_t size) noexcept
+{
+	translator::DXFReader reader(this, locale(), version());
+
+	return reader.read(byteArrayData,size);
+}
+
+cad::Error::Code cad::Database::writeFile(const std::filesystem::path& path,
+	const std::vector<types::byte>& buffer) noexcept
+{
+	if (!isValidPath(path))
+		return Error::Code::InvalidPath;
+
+	auto file = _wfopen(path.wstring().c_str(), L"wb");
+
+	if (file == nullptr)
+		return Error::Code::CannotOpenFile;
+
+	auto countReaded = fwrite(buffer.data(), buffer.size(), 1, file);
+	auto closeStatus = fclose(file);
+
+	if (countReaded != 1 || closeStatus != 0)
+		return Error::Code::IOStreamWritingError;
+
+	return Error::Code::NoErr;
+}
+
+cad::Error::Code cad::Database::writeByteArray(std::vector<types::byte>& buffer,bool isBinary) noexcept
+{
+	translator::DXFWriter writer(this, locale(), version());
+	auto sizeFile = calculateApproximateFileSize();
+
+	if (sizeFile > buffer.max_size())
+		return Error::Code::OutOfMemory;
+
+	buffer.resize(sizeFile);
+
+	return writer.write(buffer, isBinary);
 }

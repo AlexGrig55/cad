@@ -1,10 +1,11 @@
 #include <cad/core/block/block.h>
 
-uint32_t cad::Block::fromDXF(std::string_view& buffer, enums::Version ver) noexcept
+cad::Error::Code cad::Block::readDXF(translator::DXFInput& reader) noexcept
 {
-	return 0;
+	return cad::Error::Code::NoErr;
 }
 
-void cad::Block::toDXF(const std::string& buffer, enums::Version ver) noexcept
+cad::Error::Code cad::Block::writeDXF(translator::DXFOutput& reader) noexcept
 {
+	return cad::Error::Code::NoErr;
 }
