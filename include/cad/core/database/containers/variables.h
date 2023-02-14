@@ -35,7 +35,7 @@ class CAD_API cad::Database::Variables: public base::ICadObject
 			return util::LocalesList::getLocaleNum((*_generalVarsPtr)[1].get<types::String>());
 		}
 		void setLocale(enums::Locale val) noexcept {
-			(*_generalVarsPtr)[1].set(util::LocalesList::getLocale(val));
+			(*_generalVarsPtr)[1].set(util::LocalesList::getLocaleName(val));
 		}
 
 		constexpr auto& lastSavedUser()const noexcept { return (*_generalVarsPtr)[2].get<types::String>(); }

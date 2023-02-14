@@ -1,6 +1,7 @@
 #pragma once
 #include "../base/cad_obj.h"
 #include "../table/layer.h"
+#include "../entity/entities.hpp"
 
 #include <geom/geom.hpp>
 #include <filesystem>
@@ -9,36 +10,54 @@ namespace cad
 {
 	class CAD_API Block : public base::NamedObject, public table::ILayerUser
 	{
+		util::Container<entity::BaseEntity*>	_entities;
+
 		types::String			_description;
 		types::String			_layer;
 		std::filesystem::path	_xrefPath;
 
-		geom::Point3_d		_basePoint;
+		types::Point3			_basePoint;
 
 		enums::BlockBitFlagType	_bitFlagType;
+
+	private:
+		void actionBeforAdded(entity::BaseEntity* entity);
+		void actionBeforDeleted(entity::BaseEntity* entity);
+		size_t indexByVal(const entity::BaseEntity* entityPtr)const noexcept;
 
 	public:
 		constexpr Block(const types::String& name,
 			const types::String& layer = "0")noexcept :
 			base::NamedObject(name),_layer(layer), _bitFlagType(enums::BlockBitFlagType::None) {}
-
+		~Block()noexcept { clear(); }
 
 #pragma region getters_setters
-		constexpr const auto& description()					const noexcept { return _description; }
-		constexpr void	setDescription(const types::String& val)	noexcept { _description = val; }
+		constexpr const util::ConstContainer< entity::BaseEntity*>& entities()const noexcept { return _entities; }
+		constexpr util::ConstContainer<entity::BaseEntity*>& entities() noexcept { return _entities; }
+		constexpr auto countEntities() const noexcept { return _entities.count(); }
 
-		constexpr const auto& xrefPath()					const noexcept { return _xrefPath; }
+		constexpr const auto& description() const noexcept { return _description; }
+		constexpr void	setDescription(const types::String& val) noexcept { _description = val; }
+
+		constexpr const auto& xrefPath() const noexcept { return _xrefPath; }
 		constexpr void	setXefPath(const std::filesystem::path& val)noexcept { _xrefPath = val; }
 
-		constexpr const auto& basePoint()					const noexcept { return _basePoint; }
-		constexpr void	setBasePoint(const geom::Point3_d& val)noexcept { _basePoint = val; }
+		constexpr const auto& basePoint() const noexcept { return _basePoint; }
+		constexpr void	setBasePoint(const types::Point3& val)noexcept { _basePoint = val; }
 
 		constexpr types::int16 bitFlagType() const noexcept { return types::int16(_bitFlagType); }
 #pragma endregion getters_setters
 
 
 #pragma region actions
-		//inline Block* copy()const { return new Block(*this); }
+		void addEntity(cad::entity::BaseEntity* entity);
+
+		void delEntity(const cad::entity::BaseEntity* entityPtr);
+		void delEntity(size_t ind, size_t count = 1);
+		//clear container with entities
+		void clear()noexcept { delEntity(0, countEntities()); }
+
+		constexpr void swapEntities(size_t indFirstEnt, size_t indSecondEnt)noexcept { std::swap(_entities[indFirstEnt], _entities[indSecondEnt]); }
 #pragma endregion actions
 
 
@@ -49,8 +68,8 @@ namespace cad
 		constexpr void	setLayer(const types::String& val)		noexcept override { _layer = val; }
 
 	protected:
-		Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		Error::Code writeDXF(translator::DXFOutput& reader) noexcept override;
+		Error::Code readDXF(translator::DXFInput& reader)	noexcept override;
+		Error::Code writeDXF(translator::DXFOutput& reader)	noexcept override;
 #pragma endregion overrides
 	};
 }

@@ -52,10 +52,23 @@ namespace cad
 		template<class T>
 		constexpr const auto& get()const { return std::get<T>(_val); }
 
-		template <class T>
-		constexpr void set(const T& val) { _val = val; }
-		template <class T>
-		constexpr void set(T&& val) { _val = std::move(val); }
+		constexpr void set(const types::String& val) { _val = val; }
+		constexpr void set(types::real val) { _val = val; }
+		constexpr void set(types::int16 val) { _val = val; }
+		constexpr void set(types::int32 val) { _val = val; }
+		constexpr void set(types::int64 val) { _val = val; }
+		constexpr void set(types::boolean val) { _val = val; }
+		constexpr void set(const types::Point2& val) { _val = val; }
+		constexpr void set(const types::Point3& val) { _val = val; }
+
+		constexpr void set(types::String&& val) { _val = std::move(val); }
+		constexpr void set(types::Point2&& val) { _val = std::move(val); }
+		constexpr void set(types::Point3&& val) { _val = std::move(val); }
+
+		//template <class T>
+		//constexpr void set(const T& val) { /*_val = val*/; }
+		//template <class T>
+		//constexpr void set(T&& val) { _val = std::move(val); }
 
 		constexpr const auto& name() const noexcept { return _name; }
 
