@@ -32,7 +32,9 @@ namespace cad
 		~Block()noexcept { clear(); }
 
 #pragma region getters_setters
-		constexpr const util::ConstContainer< entity::BaseEntity*>& entities()const noexcept { return _entities; }
+		constexpr const util::ConstContainer<const entity::BaseEntity*>& entities()const noexcept { 
+			auto ptr = (void*)&_entities; return *(util::ConstContainer<const entity::BaseEntity*>*)ptr;
+		}
 		constexpr util::ConstContainer<entity::BaseEntity*>& entities() noexcept { return _entities; }
 		constexpr auto countEntities() const noexcept { return _entities.count(); }
 

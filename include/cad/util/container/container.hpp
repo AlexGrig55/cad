@@ -15,31 +15,19 @@ namespace cad::util
 		ConstContainer(std::initializer_list<T>&& list) :vec(list) {}
 
 
+#pragma region usings
+		using vec::data;
+		using vec::begin;
+		using vec::end;
+		using vec::back;
+		using vec::front;
+		using vec::at;
+		using vec::operator[];
+#pragma endregion usings
+
+
 #pragma region getters_setters
 		constexpr size_t count()const noexcept { return vec::size(); }
-
-		constexpr auto data()noexcept { return vec::data(); }
-
-		constexpr std::enable_if_t<std::is_pointer<T>::value, const T*> data()const noexcept { const T tmp = *vec::data(); return tmp; }
-
-		constexpr std::enable_if_t<!std::is_pointer<T>::value, const T*> data()const noexcept { return vec::data(); }
-
-		constexpr T* begin()noexcept { return vec::data(); }
-		constexpr T* end()noexcept { return vec::data() + vec::size(); }
-		constexpr const T* const begin()const noexcept { return vec::data(); }
-		constexpr const T* const end() const noexcept { return vec::data() + vec::size(); }
-
-		constexpr T& back() noexcept { return vec::back(); }
-		constexpr T& front() noexcept { return vec::front(); }
-		constexpr const T& back() const noexcept { return vec::back(); }
-		constexpr const T& front() const noexcept { return vec::front(); }
-
-		constexpr T& at(size_t i) { return vec::at(i); }
-		constexpr const T& at(size_t i)const { return vec::at(i); }
-
-		constexpr T& operator[](size_t i)noexcept { return vec::operator[](i); }
-		constexpr const T& operator[](size_t i)const noexcept { return vec::operator[](i); }
-
 #pragma endregion getters_setters
 	};
 
