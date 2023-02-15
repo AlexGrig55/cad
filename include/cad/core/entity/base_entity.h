@@ -5,6 +5,52 @@
 
 #include <geom/geom.hpp>
 
+namespace cad::options
+{
+	//default values:
+	//layer="0"; lineType,color,lineWeight = "ByLayer"; lineTypeScale = 1; visible = true
+	class CreateEnt
+	{
+		types::String		_layer;
+		types::String		_lineType;
+
+		Color				_color;
+
+		types::real			_lineTypeScale;
+
+		enums::LineWeight	_lineWeight;
+
+		bool				_visible;
+
+	public:
+		constexpr CreateEnt()noexcept :_layer("0"),
+			_lineType("ByLayer"),
+			_color(enums::Color::ByLayer),
+			_lineTypeScale(1), _lineWeight(enums::LineWeight::ByLayer), _visible(true){}
+
+		constexpr auto& setLayer(const types::String& val)noexcept { _layer = val; return *this; }
+		constexpr auto& layer()const noexcept { return _layer; }
+
+		constexpr auto& setLineType(const types::String& val)noexcept { _lineType = val; return *this; }
+		constexpr auto& lineType()const noexcept { return _lineType; }
+
+		constexpr auto& setColor(const Color& val)noexcept { _color = val; return *this; }
+		constexpr auto& color()const noexcept { return _color; }
+
+		constexpr auto& setLineTypeScale(types::real val)noexcept { _lineTypeScale = val; return *this; }
+		constexpr auto lineTypeScale()const noexcept { return _lineTypeScale; }
+
+		constexpr auto& setLineWeight(enums::LineWeight val)noexcept { _lineWeight = val; return *this; }
+		constexpr auto lineWeight()const noexcept { return _lineWeight; }
+
+		constexpr auto& setVisible(bool val)noexcept { _visible = val; return *this; }
+		constexpr auto visible()const noexcept { return _visible; }
+
+		auto operator->()noexcept { return this; }
+		auto operator->()const noexcept { return this; }
+	};
+}
+
 namespace cad::entity
 {
 	class CAD_API BaseEntity : public base::Handler, public table::ILayerUser
@@ -26,10 +72,9 @@ namespace cad::entity
 		BaseEntity& operator=(const BaseEntity& val) = default;
 
 	public:
-		constexpr BaseEntity(const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			_layer(layer), _lineType(lineType), _lineTypeScale(1), _color(color),
-			_lineWeight(enums::LineWeight::ByLayer), _visible(true) {}
+		constexpr BaseEntity(const options::CreateEnt& opt)noexcept :
+			_layer(opt.layer()), _lineType(opt.lineType()), _lineTypeScale(opt.lineTypeScale()),
+			_color(opt.color()),_lineWeight(opt.lineWeight()), _visible(opt.visible()) {}
 
 		virtual ~BaseEntity() = default;
 

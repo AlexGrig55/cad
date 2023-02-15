@@ -24,7 +24,49 @@ size_t cad::Block::indexByVal(const entity::BaseEntity* entityPtr) const noexcep
 		++res;
 	}
 
-	return std::numeric_limits<size_t>::max();
+    return std::numeric_limits<size_t>::max();
+}
+
+cad::entity::BaseEntity* cad::Block::createEntityByName(std::string_view name)
+{
+    entity::BaseEntity* object = nullptr;
+
+    switch (StringConverter::toId(name))
+    {
+    case StringConverter::toId("POINT"):
+        object = new entity::Point(0,0);
+        break;
+
+    case StringConverter::toId("LINE"):
+        object = new entity::Line(types::Point3(), types::Point3());
+        break;
+
+    case StringConverter::toId("ENDBLK"):
+        break;
+    }
+
+    return object;
+}
+
+cad::entity::BaseEntity* cad::Block::readEntity(std::string_view entiName, translator::DXFInput& reader) noexcept
+{
+    entity::BaseEntity* object = createEntityByName(entiName);    
+
+    if (object)
+    {
+        tr::callReadObj(*object,reader);
+    }
+    else
+    {
+        types::int16 dxfCode = 1;
+        while (dxfCode!=0)
+        {
+            reader.readCode(&dxfCode);
+            reader.readValue();
+        }
+    }
+
+    return object;
 }
 
 void cad::Block::addEntity(entity::BaseEntity* entity)
@@ -67,6 +109,7 @@ cad::Error::Code cad::Block::readDXF(translator::DXFInput& reader) noexcept
     Error::Code errCode = Error::Code::NoErr;
     bool stop = false;
     types::int16 tmpFlag;
+    entity::BaseEntity* entity;
 
     while (reader.isGood() && !stop)
     {
@@ -79,7 +122,7 @@ cad::Error::Code cad::Block::readDXF(translator::DXFInput& reader) noexcept
             if (str == tr::DXF_DATA_NAMES[tr::EndSec].second)
                 stop = true;
             else
-                errCode = Error::Code::InvalidDataInFile;
+                entity = readEntity(str, reader);
             break;
 
         case Codes::Handle:

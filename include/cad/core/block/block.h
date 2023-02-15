@@ -28,6 +28,9 @@ namespace cad
 		void actionBeforDeleted(entity::BaseEntity* entity);
 		size_t indexByVal(const entity::BaseEntity* entityPtr)const noexcept;
 
+		entity::BaseEntity* createEntityByName(std::string_view name);
+		entity::BaseEntity* readEntity(std::string_view entiName, translator::DXFInput& reader)noexcept;
+
 	public:
 		constexpr Block(const types::String& name,
 			const types::String& layer = "0")noexcept :

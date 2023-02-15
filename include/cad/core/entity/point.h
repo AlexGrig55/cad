@@ -14,16 +14,17 @@ namespace cad::entity
 		geom::Angle		_angleShape;//angle for PDMODE
 
 	public:
-		constexpr Point(const geom::Point3_d& p = {}, const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			BaseEntity(color, layer, lineType), _coor(p), _normal(0,0,1), _thickness(0){}
+		constexpr Point(const types::Point3& p = {},
+			const options::CreateEnt& opt = options::CreateEnt())noexcept :
+			BaseEntity(opt), _coor(p), _normal(0,0,1), _thickness(0){}
 
-		constexpr Point(const geom::Point2_d& p = {}, const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			Point({ p.x(), p.y(), 0 }, color, layer, lineType) {}
+		constexpr Point(const types::Point2& p,
+			const options::CreateEnt& opt = options::CreateEnt())noexcept :
+			Point({ p.x(), p.y(), 0 }, opt) {}
 
-		constexpr Point(double x, double y, double z = 0)noexcept:
-			Point(geom::Point3_d{ x,y,z }) {}
+		constexpr Point(types::real x, types::real y, types::real z = 0,
+			const options::CreateEnt& opt = options::CreateEnt())noexcept:
+			Point({ x,y,z }, opt) {}
 
 #pragma region getters_setters
 		constexpr const auto& coor()const noexcept { return _coor; }

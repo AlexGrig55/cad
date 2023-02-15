@@ -16,23 +16,22 @@ namespace cad::entity
 
 	public:
 		Line& operator=(const Line& val) = delete;
-		constexpr Line(const geom::Line3_d& line = {},
-			const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			BaseEntity(color, layer, lineType), _line(line), _normal(0,0,1), _thickness(0){}
-		constexpr Line(const geom::Point3_d& p0, const geom::Point3_d& p1,
-			const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			Line({p0,p1},color, layer, lineType){}
 
-		constexpr Line(const geom::Line2_d& line, const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			Line({ line.point(0).toPoint3(), line.point(1).toPoint3() },
-			color, layer, lineType) {}
-		constexpr Line(const geom::Point2_d& p0, const geom::Point2_d& p1,
-			const Color& color = Color(enums::Color::ByLayer),
-			const types::String& layer = "0", const types::String& lineType = "ByLayer")noexcept :
-			Line({ p0,p1 }, color, layer, lineType) {}
+		constexpr Line(const geom::Line3_d& line = {},
+			const options::CreateEnt& opt= options::CreateEnt())noexcept :
+			BaseEntity(opt), _line(line), _normal(0,0,1), _thickness(0){}
+
+		constexpr Line(const types::Point3& p0, const types::Point3& p1,
+			const options::CreateEnt& opt = options::CreateEnt())noexcept :
+			Line({p0,p1}, opt){}
+
+		constexpr Line(const geom::Line2_d& line,
+			const options::CreateEnt& opt = options::CreateEnt())noexcept :
+			Line({ line.point(0).toPoint3(), line.point(1).toPoint3() }, opt) {}
+
+		constexpr Line(const types::Point2& p0, const types::Point2& p1,
+			const options::CreateEnt& opt = options::CreateEnt())noexcept :
+			Line({ p0,p1 }, opt) {}
 
 #pragma region getters_setters
 		constexpr const auto& line()const noexcept { return _line; }
