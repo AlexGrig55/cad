@@ -14,11 +14,14 @@ namespace cad
 
 		types::String			_description;
 		types::String			_layer;
-		std::filesystem::path	_xrefPath;
+		types::String			_xrefPath;
 
 		types::Point3			_basePoint;
 
 		enums::BlockBitFlagType	_bitFlagType;
+
+		//first - <=r12; second - >r12
+		static const std::vector<std::pair<const char*, const char*>> STANDARD_NAMES;
 
 	private:
 		void actionBeforAdded(entity::BaseEntity* entity);
@@ -33,7 +36,7 @@ namespace cad
 
 #pragma region getters_setters
 		constexpr const util::ConstContainer<const entity::BaseEntity*>& entities()const noexcept { 
-			auto ptr = (void*)&_entities; return *(util::ConstContainer<const entity::BaseEntity*>*)ptr;
+			return *(util::ConstContainer<const entity::BaseEntity*>*)((void*)&_entities);
 		}
 		constexpr util::ConstContainer<entity::BaseEntity*>& entities() noexcept { return _entities; }
 		constexpr auto countEntities() const noexcept { return _entities.count(); }
@@ -42,7 +45,7 @@ namespace cad
 		constexpr void	setDescription(const types::String& val) noexcept { _description = val; }
 
 		constexpr const auto& xrefPath() const noexcept { return _xrefPath; }
-		constexpr void	setXefPath(const std::filesystem::path& val)noexcept { _xrefPath = val; }
+		constexpr void	setXefPath(const types::String& val)noexcept { _xrefPath = val; }
 
 		constexpr const auto& basePoint() const noexcept { return _basePoint; }
 		constexpr void	setBasePoint(const types::Point3& val)noexcept { _basePoint = val; }
