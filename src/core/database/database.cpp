@@ -1,12 +1,13 @@
 #include <cad/core/database/database.h>
 #include <assert.h>
 #include "../../translator/translator.hpp"
+#include "./initializer/initializer.h"
 #include <cad/core/database/containers/containers.hpp>
 
 
-void cad::Database::init()noexcept
+cad::Error::Code cad::Database::init()noexcept
 {
-
+	return Initializer::initDb(this);
 }
 
 bool cad::Database::isValidPath(const std::filesystem::path& path) const noexcept
@@ -30,14 +31,6 @@ bool cad::Database::isValidPath(const std::filesystem::path& path) const noexcep
 	return true;
 }
 
-bool cad::Database::isContainersCreated()const noexcept
-{
-	return	_variables &&
-		_classes &&
-		//_linetypes && _layers && _appids && _styles &&
-		_blocks;
-}
-
 cad::enums::Version cad::Database::version() const noexcept
 {
 	return this->variables().generalVariables().version();
@@ -53,51 +46,32 @@ cad::Database::Database(const std::filesystem::path& path, Error::Code* err)noex
 	std::vector<types::byte> buffer;
 	Error::Code codeErr = readFile(path, buffer);
 
-	if (codeErr== Error::Code::NoErr)
+	if (codeErr == Error::Code::NoErr)
 	{
-		this->Database::Database(buffer.data(), buffer.size(), &codeErr);
+		this->Database::Database(buffer.data(), buffer.size(), err);
 	}
 	else
 	{
 		if (err)
 			*err = codeErr;
-
 		_isValid = false;
 	}
 }
 
-cad::Database::Database(const types::byte* byteArrayData, size_t size, Error::Code* err) noexcept :
-	_variables(new(std::nothrow) Variables(enums::Locale::CentralEurope, enums::Version::V2018)),
-	_classes(new(std::nothrow) Classes()),
-	_blocks(new(std::nothrow) NamedContainer<Block>("BLOCKS")),
-
-	_appids(new(std::nothrow) NamedContainer<table::Appid>("APPID")),
-	_linetypes(new(std::nothrow) NamedContainer<table::Linetype>("LTYPE")),
-	_layers(new(std::nothrow) NamedContainer<table::Layer>("LAYER")),
-	_views(new(std::nothrow) NamedContainer<table::View>("VIEW")),
-	_styles(new(std::nothrow) NamedContainer<table::Style>("STYLE")),
-	_UCSes(new(std::nothrow) NamedContainer<table::UCS>("UCS")),
-	_vports(new(std::nothrow) NamedContainer<table::Vport>("VPORT")),
-	_dimstyles(new(std::nothrow) NamedContainer<table::Dimstyle>("DIMSTYLE"))
+cad::Database::Database(const types::byte* byteArrayData, size_t size, Error::Code* err) noexcept
 {
-	Error::Code localErr;
+	Error::Code localErr = init();
 
-	if (isContainersCreated())
-	{
-		init();
+	localErr = readByteArray(byteArrayData, size);
 
-		localErr = readByteArray(byteArrayData, size);
-	}
-	else
-	{
-		localErr = Error::Code::OutOfMemory;
-	}
+	Initializer::fillHandles(this);
 
 	if (err)
 		*err = localErr;
 
 	_isValid = localErr == Error::Code::NoErr;
 }
+
 
 cad::Database::~Database() noexcept
 {
@@ -107,20 +81,39 @@ cad::Database::~Database() noexcept
 	delete _classes;
 
 	delete _linetypes; delete _layers; delete _appids; delete _styles;
-	delete _views; delete _UCSes; delete _vports; delete _dimstyles;
+	delete _views; delete _ucses; delete _vports; delete _dimstyles;
 
 	delete _blocks;
 
 	delete _objects;
 }
 
-size_t cad::Database::calculateApproximateFileSize() const noexcept
+size_t cad::Database::calculateApproximateFileSize(bool isBinary) const noexcept
 {
-	size_t res = 0;
+	size_t res = 10000;
 
+	res += variables().customCount() * 50;
+	res += variables().generalCount() * 50;
 
+	res += (size_t)layers().count() * 400;
+	res += (size_t)appids().count() * 100;
+	res += (size_t)dimstyles().count() * 1300;
+	res += (size_t)linetypes().count() * 500;
+	res += (size_t)styles().count() * 400;
+	res += (size_t)ucses().count() * 400;
+	res += (size_t)views().count() * 400;
+	res += (size_t)vports().count() * 600;
 
-	return res * 2;
+	for (auto& blk : blocks().list())
+	{
+		res += 100;
+		res += blk->entityCount() * 700;
+	}
+
+	if (isBinary)
+		res *= 0.8;
+
+	return res;
 }
 
 void cad::Database::clearDB() noexcept
@@ -138,7 +131,7 @@ const cad::base::Handler* cad::Database::getObjectByHandle(size_t handle) const 
 	return nullptr;
 }
 
-bool cad::Database::save(const std::filesystem::path& path, const options::SaveDB& options) noexcept
+bool cad::Database::save(const std::filesystem::path& path, const options::Save& options) noexcept
 {
 	std::vector<types::byte> buffer;
 
@@ -155,13 +148,13 @@ bool cad::Database::save(const std::filesystem::path& path, const options::SaveD
 	return false;
 }
 
-bool cad::Database::save(std::vector<types::byte>& buffer, const options::SaveDB& options) noexcept
+bool cad::Database::save(std::vector<types::byte>& buffer, const options::Save& options) noexcept
 {
 	Error::Code errCode = Error::Code::NoErr;
 
-	if (options.version() < enums::Version::Unknown)
+	if (options.version() > enums::Version::Unknown)
 	{
-		if (options.locale() < enums::Locale::Unknown)
+		if (options.locale() > enums::Locale::Unknown)
 		{
 			variables().generalVariables().setVersion(options.version());
 			variables().generalVariables().setLocale(options.locale());
@@ -239,7 +232,7 @@ cad::Error::Code cad::Database::writeFile(const std::filesystem::path& path,
 cad::Error::Code cad::Database::writeByteArray(std::vector<types::byte>& buffer,bool isBinary) noexcept
 {
 	translator::DXFWriter writer(this, locale(), version());
-	auto sizeFile = calculateApproximateFileSize();
+	auto sizeFile = calculateApproximateFileSize(isBinary);
 
 	if (sizeFile > buffer.max_size())
 		return Error::Code::OutOfMemory;

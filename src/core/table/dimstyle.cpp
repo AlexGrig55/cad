@@ -8,83 +8,87 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::table::Dimstyle::Dimstyle(const types::String& name) noexcept :TableObject(name), _variables{
-	Variable("DIMPOST",		types::String(),	3,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMAPOST",	types::String(),	4,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK",		types::String(),	5,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK1",		types::String(),	6,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK2",		types::String(),	7,		enums::Version::R12,	enums::Version::V2018),
-
-	Variable("DIMSCALE",	types::real(),		40,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMASZ",		types::real(),		41,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMEXO",		types::real(),		42,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMDLI",		types::real(),		43,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMEXE",		types::real(),		44,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMRND",		types::real(),		45,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMDLE",		types::real(),		46,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTP",		types::real(),		47,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTM",		types::real(),		48,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTXT",		types::real(),		140,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMCEN",		types::real(),		141,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTSZ",		types::real(),		142,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTF",		types::real(),		143,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMLFAC",		types::real(),		144,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTVP",		types::real(),		145,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTFAC",		types::real(),		146,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMGAP",		types::real(),		147,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTRND",	types::real(),		148,	enums::Version::R12,	enums::Version::V2018),
-
-	Variable("DIMTOL",		types::int16(),		71,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMLIM",		types::int16(),		72,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTIH",		types::int16(),		73,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTOH",		types::int16(),		74,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSE1",		types::int16(),		75,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSE2",		types::int16(),		76,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTAD",		types::int16(),		77,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMZIN",		types::int16(),		78,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMAZIN",		types::int16(),		79,		enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALT",		types::int16(),		170,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTD",		types::int16(),		171,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTOFL",		types::int16(),		172,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSAH",		types::int16(),		173,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTIX",		types::int16(),		174,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSOXD",		types::int16(),		175,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMCLRD",		types::int16(),		176,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMCLRE",		types::int16(),		177,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMCLRT",		types::int16(),		178,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMADEC",		types::int16(),		179,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMUNIT",		types::int16(),		270,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMDEC",		types::int16(),		271,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTDEC",		types::int16(),		272,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTU",		types::int16(),		273,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTTD",	types::int16(),		274,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMAUNIT",	types::int16(),		275,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMFRAC",		types::int16(),		276,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMLUNIT",	types::int16(),		277,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMDSEP",		types::int16(),		278,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTMOVE",	types::int16(),		279,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMJUST",		types::int16(),		280,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSD1",		types::int16(),		281,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMSD2",		types::int16(),		282,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTOLJ",		types::int16(),		283,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTZIN",		types::int16(),		284,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTZ",		types::int16(),		285,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMALTTZ",	types::int16(),		286,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMFIT",		types::int16(),		287,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMUPT",		types::int16(),		288,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMATFIT",	types::int16(),		289,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTXSTY",	types::int16(),		340,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTXSTY",	types::String(),	340,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMTXSTY",	types::String(),	340,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMLDRBLK",	types::String(),	341,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK",		types::String(),	342,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK1",		types::String(),	343,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMBLK2",		types::String(),	344,	enums::Version::R12,	enums::Version::V2018),
-
-	Variable("DIMLWD",		types::int16(),		371,	enums::Version::R12,	enums::Version::V2018),
-	Variable("DIMLWE",		types::int16(),		372,	enums::Version::R12,	enums::Version::V2018)
-}
+void cad::table::Dimstyle::init()
 {
+	_variables.reserve(75);
+
+	_variables.add(Variable("DIMPOST", types::String(), 3, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMAPOST", types::String(), 4, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK", types::String(), 5, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK1", types::String(), 6, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK2", types::String(), 7, enums::Version::R12, enums::Version::V2018));
+
+	_variables.add(Variable("DIMSCALE", types::real(), 40, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMASZ", types::real(), 41, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMEXO", types::real(), 42, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMDLI", types::real(), 43, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMEXE", types::real(), 44, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMRND", types::real(), 45, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMDLE", types::real(), 46, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTP", types::real(), 47, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTM", types::real(), 48, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTXT", types::real(), 140, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMCEN", types::real(), 141, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTSZ", types::real(), 142, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMALTF", types::real(), 143, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMLFAC", types::real(), 144, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTVP", types::real(), 145, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTFAC", types::real(), 146, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMGAP", types::real(), 147, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMALTRND", types::real(), 148, enums::Version::V2000, enums::Version::V2018));
+
+	_variables.add(Variable("DIMTOL", types::int16(), 71, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMLIM", types::int16(), 72, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTIH", types::int16(), 73, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTOH", types::int16(), 74, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMSE1", types::int16(), 75, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMSE2", types::int16(), 76, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTAD", types::int16(), 77, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMZIN", types::int16(), 78, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMAZIN", types::int16(), 79, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMALT", types::int16(), 170, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMALTD", types::int16(), 171, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTOFL", types::int16(), 172, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMSAH", types::int16(), 173, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMTIX", types::int16(), 174, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMSOXD", types::int16(), 175, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMCLRD", types::int16(), 176, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMCLRE", types::int16(), 177, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMCLRT", types::int16(), 178, enums::Version::R12, enums::Version::V2018));
+	_variables.add(Variable("DIMADEC", types::int16(), 179, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMUNIT", types::int16(), 270, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMDEC", types::int16(), 271, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMTDEC", types::int16(), 272, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMALTU", types::int16(), 273, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMALTTD", types::int16(), 274, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMAUNIT", types::int16(), 275, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMFRAC", types::int16(), 276, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMLUNIT", types::int16(), 277, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMDSEP", types::int16(), 278, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMTMOVE", types::int16(), 279, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMJUST", types::int16(), 280, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMSD1", types::int16(), 281, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMSD2", types::int16(), 282, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMTOLJ", types::int16(), 283, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMTZIN", types::int16(), 284, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMALTZ", types::int16(), 285, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMALTTZ", types::int16(), 286, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMFIT", types::int16(), 287, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMUPT", types::int16(), 288, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMATFIT", types::int16(), 289, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMTXSTY", types::String(), 340, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMLDRBLK", types::String(), 341, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK", types::String(), 342, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK1", types::String(), 343, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMBLK2", types::String(), 344, enums::Version::V2000, enums::Version::V2018));
+
+	_variables.add(Variable("DIMLWD", types::int16(), 371, enums::Version::V2000, enums::Version::V2018));
+	_variables.add(Variable("DIMLWE", types::int16(), 372, enums::Version::V2000, enums::Version::V2018));
+}
+
+cad::table::Dimstyle::Dimstyle(const types::String& name) noexcept :TableRecord(name)
+{
+	init();
 }
 
 cad::table::Dimstyle::Variable* cad::table::Dimstyle::variableByCode(uint16_t code) noexcept
@@ -119,7 +123,7 @@ const cad::table::Dimstyle::Variable* cad::table::Dimstyle::variableByName(std::
 	return nullptr;
 }
 
-cad::Error::Code cad::table::Dimstyle::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Dimstyle::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
 	int16_t dxfCode = -1;
 	std::string_view str;
@@ -134,18 +138,16 @@ cad::Error::Code cad::table::Dimstyle::readDXF(translator::DXFInput& reader) noe
 
 	while (reader.isGood() && !stop)
 	{
-		reader.readCode(&dxfCode);
+		reader.readCode(dxfCode);
 
 		switch (dxfCode)
 		{
-		case tr::DXF_DATA_NAMES[tr::Endtab].first:
-			reader.readValue(str);
-			if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-				stop = true;
-			else
-				errCode = Error::Code::InvalidDataInFile;
+		case 0:
+		case 105:
+		case 70:
+		case 2:
+			stop=!readBaseTabRec(dxfCode, reader);
 			break;
-
 
 		default:
 			var = variableByCode(dxfCode);
@@ -176,7 +178,8 @@ cad::Error::Code cad::table::Dimstyle::readDXF(translator::DXFInput& reader) noe
 
 			}
 			else
-				errCode = TableObject::readDXF(reader);
+				reader.readValue();
+
 			break;
 		}
 	}
@@ -184,15 +187,9 @@ cad::Error::Code cad::table::Dimstyle::readDXF(translator::DXFInput& reader) noe
 	return errCode;
 }
 
-cad::Error::Code cad::table::Dimstyle::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Dimstyle::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-	Error::Code errCode = TableObject::writeDXF(writer);
-
-	if (errCode != Error::Code::NoErr)
-		return errCode;
-
-	if (writer.version() > enums::Version::R12)
-		writer.writeData(100, "AcDbDimStyleTableRecord");
+	auto errCode = writeTabRecordHeader(dxfName(), "AcDbDimstyleTableRecord", writer);
 
 	for (auto& v : _variables)
 	{
@@ -200,15 +197,15 @@ cad::Error::Code cad::table::Dimstyle::writeDXF(translator::DXFOutput& writer) n
 			switch (v.typeData())
 			{
 			case types::EType::Float:
-				writer.writeData(v.code(),v.get<types::real>() );
+				errCode = writer.writeData(v.code(),v.get<types::real>() );
 				break;
 
 			case types::EType::Int16:
-				writer.writeData(v.code(), v.get<types::int16>());
+				errCode = writer.writeData(v.code(), v.get<types::int16>());
 				break;
 
 			case types::EType::String:
-				writer.writeData(v.code(), v.get<types::String>());
+				errCode = writer.writeData(v.code(), v.get<types::String>());
 				break;
 
 			default:

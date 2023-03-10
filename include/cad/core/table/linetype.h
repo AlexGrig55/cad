@@ -1,18 +1,18 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 #include "./../../util/container/container.hpp"
 
 namespace cad::table
 {
-	class ILinetypeUser
+	class ILinetypeUser :public base::IUser
 	{
 	public:
-		virtual ~ILinetypeUser() = default;
+		virtual constexpr ~ILinetypeUser() noexcept = default;
 		virtual constexpr const types::String& linetype()const noexcept = 0;
 		virtual void setLinetype(const types::String& name)noexcept = 0;
 	};
 
-	class CAD_API Linetype : public TableObject
+	class CAD_API Linetype : public TableRecord<ILinetypeUser>
 	{
 	public:
 		class Element
@@ -66,10 +66,11 @@ namespace cad::table
 		Element* getCurrentElementForRead(uint32_t& auxilFlag,uint32_t flagCurrentCode);
 
 	public:
-		constexpr Linetype(const types::String& name, const types::String& descripText="")noexcept :
-			TableObject(name), _descriptiveText(descripText),
+		constexpr Linetype(const types::String& name, const types::String& descriptText="")noexcept :
+			TableRecord(name), _descriptiveText(descriptText),
 			_patternLength(0)
 		{}
+		constexpr ~Linetype() noexcept = default;
 
 #pragma region getters_setters
 		constexpr auto& elements()noexcept { return _elements; }
@@ -89,8 +90,8 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "LTYPE"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

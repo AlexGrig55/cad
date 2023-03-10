@@ -45,7 +45,7 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::Vport::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Vport::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode = -1;
     std::string_view str;
@@ -55,80 +55,103 @@ cad::Error::Code cad::table::Vport::readDXF(translator::DXFInput& reader) noexce
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::PlotStyleSheet:
             reader.readValue(_plotStyleSheet);
             break;
 
         case Codes::LoverLelftCorner_x:
+            reader.readValue(_loverLeftCorner[0]);
+            break;
         case Codes::LoverLelftCorner_y:
-            reader.readValue(dxfCode, LoverLelftCorner_x,_loverLelftCorner);
+            reader.readValue(_loverLeftCorner[1]);
             break;
 
         case Codes::UpperRightCorner_x:
+            reader.readValue(_upperRightCorner[0]);
+            break;
         case Codes::UpperRightCorner_y:
-            reader.readValue(dxfCode, UpperRightCorner_x, _upperRightCorner);
+            reader.readValue(_upperRightCorner[1]);
             break;
 
         case Codes::Center_x:
+            reader.readValue(_center[0]);
+            break;
         case Codes::Center_y:
-            reader.readValue(dxfCode, Center_x, _center);
+            reader.readValue(_center[1]);
             break;
 
         case Codes::SnapBasePoint_x:
+            reader.readValue(_snapBasePoint[0]);
+            break;
         case Codes::SnapBasePoint_y:
-            reader.readValue(dxfCode, SnapBasePoint_x, _snapBasePoint);
+            reader.readValue(_snapBasePoint[1]);
             break;
 
         case Codes::SnapSpacing_x:
+            reader.readValue(_snapSpacing[0]);
+            break;
         case Codes::SnapSpacing_y:
-            reader.readValue(dxfCode, SnapSpacing_x, _snapSpacing);
+            reader.readValue(_snapSpacing[1]);
             break;
 
         case Codes::GridSpacing_x:
+            reader.readValue(_gridSpacing[0]);
+            break;
         case Codes::GridSpacing_y:
-            reader.readValue(dxfCode, GridSpacing_x, _gridSpacing);
+            reader.readValue(_gridSpacing[1]);
             break;
 
         case Codes::DirectionFromTargetPoint_x:
+            reader.readValue(_directionFromTargetPoint[0]);
+            break;
         case Codes::DirectionFromTargetPoint_y:
+            reader.readValue(_directionFromTargetPoint[1]);
+            break;
         case Codes::DirectionFromTargetPoint_z:
-            reader.readValue(dxfCode, DirectionFromTargetPoint_x, _directionFromTargetPoint);
+            reader.readValue(_directionFromTargetPoint[2]);
             break;
 
         case Codes::ViewTargetPoint_x:
+            reader.readValue(_viewTargetPoint[0]);
+            break;
         case Codes::ViewTargetPoint_y:
+            reader.readValue(_viewTargetPoint[1]);
+            break;
         case Codes::ViewTargetPoint_z:
-            reader.readValue(dxfCode, ViewTargetPoint_x, _viewTargetPoint);
+            reader.readValue(_viewTargetPoint[2]);
             break;
 
         case Codes::UcsOrigin_x:
+            reader.readValue(_ucsOrigin[0]);
+            break;
         case Codes::UcsOrigin_y:
+            reader.readValue(_ucsOrigin[1]);
+            break;
         case Codes::UcsOrigin_z:
-            reader.readValue(dxfCode, UcsOrigin_x, _ucsOrigin);
+            reader.readValue(_ucsOrigin[2]);
             break;
 
         case Codes::UcsXaxis_x:
+            reader.readValue(_ucsXAxis[0]);
+            break;
         case Codes::UcsXaxis_y:
+            reader.readValue(_ucsXAxis[1]);
+            break;
         case Codes::UcsXaxis_z:
-            reader.readValue(dxfCode, UcsXaxis_x, _ucsXaxis);
+            reader.readValue(_ucsXAxis[2]);
             break;
 
         case Codes::UcsYaxis_x:
+            reader.readValue(_ucsYAxis[0]);
         case Codes::UcsYaxis_y:
+            reader.readValue(_ucsYAxis[1]);
         case Codes::UcsYaxis_z:
-            reader.readValue(dxfCode, UcsYaxis_x, _ucsYaxis);
+            reader.readValue(_ucsYAxis[2]);
             break;
 
         case Codes::LensLength:
@@ -219,9 +242,8 @@ cad::Error::Code cad::table::Vport::readDXF(translator::DXFInput& reader) noexce
             reader.readValue(_ambientColor[2]);
             break;
 
-
         default:
-            errCode = TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode,reader);
             break;
         }
     }
@@ -229,17 +251,11 @@ cad::Error::Code cad::table::Vport::readDXF(translator::DXFInput& reader) noexce
     return errCode;
 }
 
-cad::Error::Code cad::table::Vport::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Vport::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbVportTableRecord", writer);
 
-    if (errCode != Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100, "AcDbVportTableRecord");
-
-    writer.writeData(Codes::LoverLelftCorner_x, _loverLelftCorner);
+    writer.writeData(Codes::LoverLelftCorner_x, _loverLeftCorner);
     writer.writeData(Codes::UpperRightCorner_x, _upperRightCorner);
     writer.writeData(Codes::Center_x, _center);
     writer.writeData(Codes::SnapBasePoint_x, _snapBasePoint);
@@ -258,34 +274,46 @@ cad::Error::Code cad::table::Vport::writeDXF(translator::DXFOutput& writer) noex
 
     writer.writeData(Codes::ViewMode, _viewMode);
     writer.writeData(Codes::CircleSides, _circleSides);
+    if (writer.version() <= enums::Version::R12)
+        writer.writeData(73, (types::int16)1);
     writer.writeData(Codes::UcsIconSetting, _ucsIconSetting);
+    if (writer.version() <= enums::Version::R12)
+    {
+        writer.writeData(75, (types::int16)0);
+        writer.writeData(76, (types::int16)0);
+        writer.writeData(77, (types::int16)0);
+        writer.writeData(78, (types::int16)0);
+    }
 
-    if(_plotStyleSheet.size())
-        writer.writeData(Codes::PlotStyleSheet, _plotStyleSheet);
-    writer.writeData(Codes::RenderMode, (types::int16)_renderMode);
+    if (writer.version() > enums::Version::R12)
+    {
+        if (_plotStyleSheet.size())
+            writer.writeData(Codes::PlotStyleSheet, _plotStyleSheet);
 
-    writer.writeData(Codes::UcsOrigin_x, _ucsOrigin);
-    writer.writeData(Codes::UcsXaxis_x, _ucsXaxis);
-    writer.writeData(Codes::UcsYaxis_x, _ucsYaxis);
+        writer.writeData(Codes::RenderMode, (types::int16)_renderMode);
+        writer.writeData(Codes::UcsOrigin_x, _ucsOrigin);
+        writer.writeData(Codes::UcsXaxis_x, _ucsXAxis);
+        writer.writeData(Codes::UcsYaxis_x, _ucsYAxis);
+        writer.writeData(Codes::UcsOrthoType, (types::int16)_ucsOrthoType);
+        writer.writeData(Codes::Elevation, _elevation);
 
-    writer.writeData(Codes::UcsOrthoType, (types::int16)_ucsOrthoType);
-    writer.writeData(Codes::Elevation, _elevation);
+        if (_shadePlotSetting)
+            writer.writeData(Codes::ShadePlotSetting, _shadePlotSetting);
 
-    if(_shadePlotSetting)
-        writer.writeData(Codes::ShadePlotSetting, _shadePlotSetting);
-    writer.writeData(Codes::MajorGridLines, _majorGridLines);
-    writer.writeData(Codes::DefaultLightOn, _defaultLightOn);
+        writer.writeData(Codes::MajorGridLines, _majorGridLines);
+        writer.writeData(Codes::DefaultLightOn, _defaultLightOn);
 
-    writer.writeData(Codes::DefaultLightType, _defaultLightType);
-    writer.writeData(Codes::Brightness, _brightness);
-    writer.writeData(Codes::Contrast, _contrast);
+        writer.writeData(Codes::DefaultLightType, _defaultLightType);
+        writer.writeData(Codes::Brightness, _brightness);
+        writer.writeData(Codes::Contrast, _contrast);
 
-    if (_ambientColor[0])
-        writer.writeData(Codes::AmbientColor_0, _ambientColor[0]);
-    if (_ambientColor[1])
-        writer.writeData(Codes::AmbientColor_1, _ambientColor[1]);
-    if(_ambientColor[2])
-        writer.writeData(Codes::AmbientColor_2, _ambientColor[2]);
+        if (_ambientColor[0])
+            writer.writeData(Codes::AmbientColor_0, _ambientColor[0]);
+        if (_ambientColor[1])
+            writer.writeData(Codes::AmbientColor_1, _ambientColor[1]);
+        if (_ambientColor[2])
+            writer.writeData(Codes::AmbientColor_2, _ambientColor[2]);
+    }
 
     return errCode;
 }

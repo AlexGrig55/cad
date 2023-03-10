@@ -2,19 +2,22 @@
 #include "../../translator/translator.hpp"
 
 
-cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
-	reader.readCode();
+	int16_t dxfCode;
+	reader.readCode(dxfCode);
 
 	auto type = typeData();
 	if (isDummy())
 	{
-		this->_dataCode = reader.lastCode();
+		this->_dataCode = dxfCode;
 
-		type = types::Type::getByDxfCode(this->_dataCode);
-		if (reader.lastCode() == 10)
+		if (dxfCode == 10)
 			type = types::EType(-1);
+		else
+			type = types::Type::getByDxfCode(this->_dataCode);
 	}
+
 	bool needReadCode = true;
 
 	switch (type)
@@ -73,7 +76,7 @@ cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader) noexcept
 		types::Point2 val;
 		reader.readValue(val[0] );
 
-		reader.readCode();
+		reader.readCode(dxfCode);
 		reader.readValue(val[1]);
 		set(val);
 
@@ -86,10 +89,10 @@ cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader) noexcept
 		types::Point3 val;
 		reader.readValue(val[0]);
 
-		reader.readCode();
+		reader.readCode(dxfCode);
 		reader.readValue(val[1]);
 
-		reader.readCode();
+		reader.readCode(dxfCode);
 		reader.readValue(val[2]);
 		set(val);
 
@@ -101,15 +104,20 @@ cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader) noexcept
 	{
 		if (type == types::EType(-1))
 		{
-			types::Point3 val;
-			for (char i = 0; i < 3&&
-				(reader.lastCode() != 9 && reader.lastCode() != 0 && reader.isGood()); ++i)
+			types::real val[3]{};
+			char i = 0;
+			for (; i < 3 && (dxfCode != 9 && dxfCode != 0 && reader.isGood()); ++i)
 			{
 				reader.readValue(val[i]);
 
-				reader.readCode();
+				reader.readCode(dxfCode);
 			}
-			set(val);
+
+			if (i==2)
+				set(types::Point2(val[0],val[1]));
+			else
+				set(types::Point3(val[0], val[1], val[2]));
+
 			needReadCode = false;
 		}
 		else
@@ -123,18 +131,18 @@ cad::Error::Code cad::Variable::readDXF(translator::DXFInput& reader) noexcept
 	}
 
 	if(needReadCode)
-		reader.readCode();
+		reader.readCode(dxfCode);
 
-	while (reader.lastCode() != 9 && reader.lastCode() != 0 && reader.isGood())
+	while (dxfCode != 9 && dxfCode != 0 && reader.isGood())
 	{
 		reader.readValue();
-		reader.readCode();
+		reader.readCode(dxfCode);
 	}
 
 	return cad::Error::Code::NoErr;
 }
 
-cad::Error::Code cad::Variable::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::Variable::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
 	if (writer.version() < _startVersion)
 		return cad::Error::Code::NoErr;

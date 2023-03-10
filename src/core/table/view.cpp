@@ -28,7 +28,7 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::View::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::View::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode = -1;
     std::string_view str;
@@ -38,51 +38,66 @@ cad::Error::Code cad::table::View::readDXF(translator::DXFInput& reader) noexcep
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::Center_x:
+            reader.readValue(_center[0]);
+            break;
         case Codes::Center_y:
-            reader.readValue(dxfCode, Codes::Center_x, _center);
+            reader.readValue(_center[1]);
             break;
 
         case Codes::DirectFromTarget_x:
+            reader.readValue(_directionFromTarget[0]);
+            break;
         case Codes::DirectFromTarget_y:
+            reader.readValue(_directionFromTarget[1]);
+            break;
         case Codes::DirectFromTarget_z:
-            reader.readValue(dxfCode, Codes::DirectFromTarget_x, _directionFromTarget);
+            reader.readValue(_directionFromTarget[2]);
             break;
 
         case Codes::TargetPoint_x:
+            reader.readValue(_targetPoint[0]);
+            break;
         case Codes::TargetPoint_y:
+            reader.readValue(_targetPoint[1]);
+            break;
         case Codes::TargetPoint_z:
-            reader.readValue(dxfCode, Codes::TargetPoint_x, _targetPoint);
+            reader.readValue(_targetPoint[2]);
             break;
 
         case Codes::UcsOrigin_x:
+            reader.readValue(_ucsOrigin[0]);
+            break;
         case Codes::UcsOrigin_y:
+            reader.readValue(_ucsOrigin[1]);
+            break;
         case Codes::UcsOrigin_z:
-            reader.readValue(dxfCode, Codes::UcsOrigin_x, _ucsOrigin);
+            reader.readValue(_ucsOrigin[2]);
             break;
 
         case Codes::UcsXaxis_x:
+            reader.readValue(_ucsXAxis[0]);
+            break;
         case Codes::UcsXaxis_y:
+            reader.readValue(_ucsXAxis[1]);
+            break;
         case Codes::UcsXaxis_z:
-            reader.readValue(dxfCode, Codes::UcsXaxis_x, _ucsXaxis);
+            reader.readValue(_ucsXAxis[2]);
             break;
 
         case Codes::UcsYaxis_x:
+            reader.readValue(_ucsYAxis[0]);
+            break;
         case Codes::UcsYaxis_y:
+            reader.readValue(_ucsYAxis[1]);
+            break;
         case Codes::UcsYaxis_z:
-            reader.readValue(dxfCode, Codes::UcsYaxis_x, _ucsYaxis);
+            reader.readValue(_ucsYAxis[2]);
             break;
 
         case Codes::ViewHeight:
@@ -136,7 +151,7 @@ cad::Error::Code cad::table::View::readDXF(translator::DXFInput& reader) noexcep
             break;
 
         default:
-            errCode = TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode, reader);
             break;
         }
     }
@@ -144,15 +159,9 @@ cad::Error::Code cad::table::View::readDXF(translator::DXFInput& reader) noexcep
     return errCode;
 }
 
-cad::Error::Code cad::table::View::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::View::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
-
-    if (errCode != Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100, "AcDbViewTableRecord");
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbViewTableRecord", writer);
 
     writer.writeData(Codes::ViewHeight, _viewHeight);
     writer.writeData(Codes::Center_x, _center);
@@ -163,19 +172,23 @@ cad::Error::Code cad::table::View::writeDXF(translator::DXFOutput& writer) noexc
     writer.writeData(Codes::FrontClippingPlane, _frontClippingPlane);
     writer.writeData(Codes::BackClippingPlane, _backClippingPlane);
     writer.writeData(Codes::TwistAngle, _twistAngle);
-    writer.writeData(Codes::ViewMode, _viewMode);
-    writer.writeData(Codes::RenderMode, (types::int16)_renderMode);
-    errCode=writer.writeData(Codes::UcsAssociated, _ucsAssociated);
+    errCode = writer.writeData(Codes::ViewMode, _viewMode);
 
-    if (_ucsAssociated == 1)
+    if (writer.version() > enums::Version::R12)
     {
-        writer.writeData(Codes::UcsOrigin_x, _ucsOrigin);
-        writer.writeData(Codes::UcsXaxis_x, _ucsXaxis);
-        writer.writeData(Codes::UcsYaxis_x, _ucsYaxis);
-        writer.writeData(Codes::UcsOrthoType, (types::int16)_ucsOrthoType);
-        writer.writeData(Codes::UcsElevation, _ucsElevation);
-        writer.writeData(Codes::UcsAssociated, _ucsAssociated);
-        errCode = writer.writeData(Codes::IsCameraPlottable, _isCameraPlottable);
+        writer.writeData(Codes::RenderMode, (types::int16)_renderMode);
+        errCode = writer.writeData(Codes::UcsAssociated, _ucsAssociated);
+
+        if (_ucsAssociated == 1)
+        {
+            writer.writeData(Codes::UcsOrigin_x, _ucsOrigin);
+            writer.writeData(Codes::UcsXaxis_x, _ucsXAxis);
+            writer.writeData(Codes::UcsYaxis_x, _ucsYAxis);
+            writer.writeData(Codes::UcsOrthoType, (types::int16)_ucsOrthoType);
+            writer.writeData(Codes::UcsElevation, _ucsElevation);
+            writer.writeData(Codes::UcsAssociated, _ucsAssociated);
+            errCode = writer.writeData(Codes::IsCameraPlottable, _isCameraPlottable);
+        }
     }
 
     return errCode;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/cad_obj.h"
+#include "../base/base.hpp"
 #include "../table/layer.h"
 
 #include <geom/geom.hpp>
@@ -25,7 +25,7 @@ namespace cad::options
 	public:
 		constexpr CreateEnt()noexcept :_layer("0"),
 			_lineType("ByLayer"),
-			_color(enums::Color::ByLayer),
+			_color(Color::ByLayer),
 			_lineTypeScale(1), _lineWeight(enums::LineWeight::ByLayer), _visible(true){}
 
 		constexpr auto& setLayer(const types::String& val)noexcept { _layer = val; return *this; }
@@ -51,49 +51,53 @@ namespace cad::options
 	};
 }
 
+namespace cad
+{
+	class Block;
+}
+
 namespace cad::entity
 {
-	class CAD_API BaseEntity : public base::Handler, public table::ILayerUser
+	class CAD_API BaseEntity : public base::Handler, public table::ILayerUser, public table::ILinetypeUser
 	{
-		types::String		_layer;
-		types::String		_lineType;
+		friend class Block;
 
-		Color				_color;
+		types::String		_layer;//8
+		types::String		_lineType;//6
 
-		types::real			_lineTypeScale;
+		Color				_color;//62
 
-		enums::LineWeight	_lineWeight;
+		types::real			_lineTypeScale;//48
 
-		bool				_visible;
+		enums::LineWeight	_lineWeight;//370
 
-	protected:
-		BaseEntity(const BaseEntity& val) = default;
-		BaseEntity(BaseEntity&& val) = default;
-		BaseEntity& operator=(const BaseEntity& val) = default;
+		types::int16		_isOnPaperSpace;//67
+		types::int16		_visible;//60
 
 	public:
 		constexpr BaseEntity(const options::CreateEnt& opt)noexcept :
 			_layer(opt.layer()), _lineType(opt.lineType()), _lineTypeScale(opt.lineTypeScale()),
-			_color(opt.color()),_lineWeight(opt.lineWeight()), _visible(opt.visible()) {}
+			_color(opt.color()),_lineWeight(opt.lineWeight()), _visible(!opt.visible()), _isOnPaperSpace(0){}
 
 		virtual ~BaseEntity() = default;
-
 
 #pragma region getters_setters
 		constexpr const auto& lineType()				const noexcept { return _lineType; }
 		constexpr void	setLineType(const types::String& val)	noexcept { _lineType = val; }
 
 		constexpr auto	lineTypeScale()					const noexcept { return _lineTypeScale; }
-		constexpr void	setLineTypeScale(float& val)	noexcept { _lineTypeScale = val; }
+		constexpr void	setLineTypeScale(types::real& val)	noexcept { _lineTypeScale = val; }
 
-		constexpr const auto&	color()					const noexcept { return _color; }
+		constexpr const auto& color()					const noexcept { return _color; }
 		constexpr void	setColor(const Color& val)		noexcept { _color = val; }
 
 		constexpr auto	lineWeight()					const noexcept { return _lineWeight; }
 		constexpr void	setLineWeight(enums::LineWeight val)noexcept { _lineWeight = val; }
 
-		constexpr auto	visible()						const noexcept { return _visible; }
-		constexpr void	setVisible(bool val)			noexcept { _visible = val; }
+		constexpr bool	visible()						const noexcept { return !_visible; }
+		constexpr void	setVisible(types::boolean val)	noexcept { _visible = val; }
+
+		constexpr bool	isOnPaperSpace()				const noexcept { return _isOnPaperSpace; }
 #pragma endregion getters_setters
 
 
@@ -108,48 +112,56 @@ namespace cad::entity
 			return move(normal.toVector3(),length);
 		}
 
-		BaseEntity* rotate(const geom::Point2_d& center, geom::Angle ang)noexcept{
+		BaseEntity* rotate(const geom::Point2<types::real>& center, geom::Angle ang)noexcept{
 			return rotate({ center.x(),center.y(),0 }, { 0,0,1 }, ang);
 		}
 
-		BaseEntity* scale(const geom::Point3_d& center, float scale)noexcept {
+		BaseEntity* scale(const geom::Point3<types::real>& center, float scale)noexcept {
 			return this->scale(center, geom::Vector3(scale));
 		}
-		BaseEntity* scale(const geom::Point2_d& center, const geom::Vector2& scale)noexcept {
+		BaseEntity* scale(const geom::Point2<types::real>& center, const geom::Vector2& scale)noexcept {
 			return this->scale({ center.x(),center.y(),0 }, { scale.x(),scale.y(),1 });
 		}
-		BaseEntity* scale(const geom::Point2_d& center, float scale)noexcept {
+		BaseEntity* scale(const geom::Point2<types::real>& center, float scale)noexcept {
 			return this->scale({ center.x(),center.y(),0 }, geom::Vector3(scale, scale,1));
 		}
 
-		BaseEntity* mirror(const geom::InfLine2_d& relativeLine)noexcept {
+		BaseEntity* mirror(const geom::InfLine2<types::real>& relativeLine)noexcept {
 			geom::Vector3 n = relativeLine.normal().normal().toVector3();
-			return mirror(geom::Plane_d({ relativeLine.pos().x(),relativeLine.pos().y(),0 },n));
+			return mirror(geom::Plane<types::real>({ relativeLine.pos().x(),relativeLine.pos().y(),0 },n));
 		}
 #pragma endregion actions
 
 
 #pragma region virtual
 		virtual constexpr enums::EntyType type() const noexcept = 0;
-		virtual std::array<geom::Point3_d, 2> minMax() const noexcept = 0;
+		virtual std::array<geom::Point3<types::real>, 2> minMax() const noexcept = 0;
 		virtual constexpr BaseEntity* copy() const = 0;
 
 
 		virtual BaseEntity* move(const geom::Vector3& direct)noexcept = 0;
-		virtual BaseEntity* rotate(const geom::Point3_d& center, const geom::Vector3& axis,
+		virtual BaseEntity* rotate(const geom::Point3<types::real>& center, const geom::Vector3& axis,
 			geom::Angle ang)noexcept = 0;
-		virtual BaseEntity* scale(const geom::Point3_d& center,const geom::Vector3& scale)noexcept = 0;
-		virtual BaseEntity* mirror(const geom::Plane_d& relativePlane)noexcept = 0;
+		virtual BaseEntity* scale(const geom::Point3<types::real>& center,const geom::Vector3& scale)noexcept = 0;
+		virtual BaseEntity* mirror(const geom::Plane<types::real>& relativePlane)noexcept = 0;
 #pragma endregion virtual
 
 
 #pragma region overrides
-		constexpr const types::String& layer()					const noexcept override{ return _layer; }
-		constexpr void setLayer(const types::String& name)		noexcept override { _layer = name; }
+		constexpr const types::String& layer()				const noexcept override{ return _layer; }
+		constexpr void setLayer(const types::String& name)	noexcept override { _layer = name; }
+		constexpr void setLayer(types::String&& name)		noexcept override { _layer = std::move(name); }
+		constexpr const types::String& linetype()			const noexcept override { return _lineType; }
+		constexpr void setLinetype(const types::String& name)	noexcept override { _lineType = name; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& reader) noexcept override;
+		void onUserKeeperNameChanged(const char* interfaceName, const types::String& name)override;
+		void addingToDb(Database* db)noexcept override;
+
 #pragma endregion overrides
+
+		bool readBaseEntity(int16_t code, translator::DXFInput& input)noexcept;
+		cad::Error::Code writeBaseEntity(translator::DXFOutput& output, 
+			std::string_view dxfName, std::string_view nameClass)noexcept;
 	};
 }

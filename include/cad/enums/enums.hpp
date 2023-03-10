@@ -64,20 +64,6 @@ namespace cad::enums
 		ReferencedExternalRef = 64
 	};
 
-	enum class Color :types::int16
-	{
-		ByBlock = 0,
-		Red=1,
-		Yellow=2,
-		Green=3,
-		Cyan=4,
-		Blue=5,
-		Magenta=6,
-		White=7,
-		ByLayer=256,
-		Other
-	};
-
 	enum class LineWeight :types::int16
 	{
 		ByLayer,
@@ -172,6 +158,7 @@ namespace cad::enums
 		Text,
 		Trace,
 		Viewport,
-		Xline
+		Xline,
+		Unknown
 	};
 }

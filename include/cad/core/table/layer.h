@@ -1,20 +1,21 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 #include "./linetype.h"
 
 namespace cad::table
 {
-	class ILayerUser
+	class ILayerUser :public base::IUser
 	{
 	public:
-		virtual ~ILayerUser() = default;
+		virtual constexpr ~ILayerUser() noexcept = default;
 		virtual constexpr const types::String& layer()const noexcept = 0;
-		virtual void setLayer(const types::String& layerName)noexcept = 0;
+		virtual void setLayer(const types::String& layerName) = 0;
+		virtual void setLayer(types::String&& layerName) = 0;
 	};
 
-	class CAD_API Layer : public TableObject, public ILinetypeUser
+	class CAD_API Layer : public TableRecord<ILayerUser>, public ILinetypeUser
 	{
-		types::String				_linetype;
+		types::String		_linetype;
 
 		Color				_color;
 
@@ -28,9 +29,10 @@ namespace cad::table
 
 	public:
 		constexpr Layer(const types::String& name)noexcept :
-			TableObject(name), _color(enums::Color::White), _plotFlag(true),
+			TableRecord(name), _color(Color::White), _plotFlag(true),
 			_lineWeight(enums::LineWeight::Default), _isOn(true)
 		{}
+		constexpr ~Layer()noexcept = default;
 
 #pragma region getters_setters
 		constexpr auto color()const noexcept { return _color; }
@@ -60,8 +62,9 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "LAYER"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		void onUserKeeperNameChanged(const char* interfaceName, const types::String& name)override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

@@ -40,13 +40,13 @@ namespace cad::translator
 			return Error::Code::NoErr;
 		}
 
-		virtual Error::Code writeCode(int16_t code) = 0;
+		virtual Error::Code writeCode(int16_t code)noexcept = 0;
 
 	public:
 		constexpr DXFOutput(std::vector<types::byte>& byteArray, enums::Version ver, enums::Locale loc)noexcept :
 		_byteArray(byteArray),
-		_currentPos(byteArray.data()+byteArray.size()),
-		_availabelSpace(0),
+		_currentPos(byteArray.data()),
+		_availabelSpace(byteArray.size()),
 		_version(ver),
 		_locale(loc)
 		{	}
@@ -54,17 +54,18 @@ namespace cad::translator
 		constexpr auto locale()const noexcept { return _locale; }
 		constexpr auto version()const noexcept { return _version; }
 
+		Error::Code writeData(int16_t code, const char* val) { return writeData(code,std::string_view(val)); }
 		virtual Error::Code writeData(int16_t code, std::string_view val) = 0;
 		virtual Error::Code writeData(int16_t code, const types::String& val) = 0;
 		virtual Error::Code writeData(int16_t codeXvalue, const types::Point2& val) = 0;
 		virtual Error::Code writeData(int16_t codeXvalue, const types::Point3& val) = 0;
-		//prec=-1 - auto
-		virtual Error::Code writeData(int16_t code, types::real val,int precision=-1) = 0;
+		virtual Error::Code writeData(int16_t code, types::real val) = 0;
 		virtual Error::Code writeData(int16_t code, types::int16 val) = 0;
 		virtual Error::Code writeData(int16_t code, types::int32 val) = 0;
 		virtual Error::Code writeData(int16_t code, types::int64 val) = 0;
 		virtual Error::Code writeData(int16_t code, types::boolean val) = 0;
-		virtual Error::Code writeData(int16_t code, size_t val,int base=10) = 0;
+		//hand == SIZE_MAX - writing auto handle
+		virtual Error::Code writeHandle(int16_t code = 5, size_t hand = SIZE_MAX) = 0;
 
 		void removeEmptySpace()noexcept { _byteArray.resize(_byteArray.size()-_availabelSpace); }
 	};
@@ -75,46 +76,48 @@ namespace cad::translator
 		const char newLineSymbols[2]{ '\r','\n'};
 		size_t countNewLineSymbols;
 
-		inline Error::Code toNewLine() { return writeToBuffer(newLineSymbols, countNewLineSymbols); }
+		inline Error::Code toNewLine()noexcept { return writeToBuffer(newLineSymbols, countNewLineSymbols); }
 
-		Error::Code writeCode(int16_t code) override;
+		Error::Code writeCode(int16_t code)noexcept override;
 
 	public:
 		constexpr AsciiDXFOutput(std::vector<types::byte>& byteArray, enums::Version ver, enums::Locale loc)noexcept :
 		DXFOutput(byteArray,ver,loc),
 		countNewLineSymbols(sizeof(newLineSymbols)){}
 
-		Error::Code writeData(int16_t code, std::string_view val) override;
-		Error::Code writeData(int16_t code, const types::String& val) override;
-		Error::Code writeData(int16_t codeXvalue, const types::Point2& val)override;
-		Error::Code writeData(int16_t codeXvalue, const types::Point3& val)override;
-		Error::Code writeData(int16_t code, types::real val, int precision=-1) override;
-		Error::Code writeData(int16_t code, types::int16 val) override;
-		Error::Code writeData(int16_t code, types::int32 val) override;
-		Error::Code writeData(int16_t code, types::int64 val) override;
-		Error::Code writeData(int16_t code, types::boolean val) override;
-		Error::Code writeData(int16_t code, size_t val,int base=10) override;
+		Error::Code writeData(int16_t code, std::string_view val)noexcept override;
+		Error::Code writeData(int16_t code, const types::String& val)noexcept override;
+		Error::Code writeData(int16_t codeXvalue, const types::Point2& val)noexcept override;
+		Error::Code writeData(int16_t codeXvalue, const types::Point3& val)noexcept override;
+		Error::Code writeData(int16_t code, types::real val)noexcept override;
+		Error::Code writeData(int16_t code, types::int16 val)noexcept override;
+		Error::Code writeData(int16_t code, types::int32 val)noexcept override;
+		Error::Code writeData(int16_t code, types::int64 val)noexcept override;
+		Error::Code writeData(int16_t code, types::boolean val)noexcept override;
+		//hand == SIZE_MAX - writing auto handle
+		Error::Code writeHandle(int16_t code = 5, size_t hand = SIZE_MAX)noexcept override;
 
 	};
 
 	class CAD_API BinaryDXFOutput :public DXFOutput
 	{
-		Error::Code writeCode(int16_t code) override;
+		Error::Code writeCode(int16_t code)noexcept override;
 
 	public:
 		constexpr BinaryDXFOutput(std::vector<types::byte>& byteArray, enums::Version ver, enums::Locale loc)noexcept :
 			DXFOutput(byteArray,ver,loc) {}
 
-		Error::Code writeData(int16_t code, std::string_view val) override;
-		Error::Code writeData(int16_t code, const types::String& val) override;
-		Error::Code writeData(int16_t codeXvalue, const types::Point2& val)override;
-		Error::Code writeData(int16_t codeXvalue, const types::Point3& val)override;
-		Error::Code writeData(int16_t code, types::real val, int precision=-1) override;
-		Error::Code writeData(int16_t code, types::int16 val) override;
-		Error::Code writeData(int16_t code, types::int32 val) override;
-		Error::Code writeData(int16_t code, types::int64 val) override;
-		Error::Code writeData(int16_t code, types::boolean val) override;
-		Error::Code writeData(int16_t code, size_t val, int base = 10) override;
+		Error::Code writeData(int16_t code, std::string_view val)noexcept override;
+		Error::Code writeData(int16_t code, const types::String& val)noexcept override;
+		Error::Code writeData(int16_t codeXvalue, const types::Point2& val)noexcept override;
+		Error::Code writeData(int16_t codeXvalue, const types::Point3& val)noexcept override;
+		Error::Code writeData(int16_t code, types::real val)noexcept override;
+		Error::Code writeData(int16_t code, types::int16 val)noexcept override;
+		Error::Code writeData(int16_t code, types::int32 val)noexcept override;
+		Error::Code writeData(int16_t code, types::int64 val)noexcept override;
+		Error::Code writeData(int16_t code, types::boolean val)noexcept override;
+		//hand == SIZE_MAX - writing auto handle
+		Error::Code writeHandle(int16_t code = 5, size_t hand = SIZE_MAX)noexcept override;
 
 	};
 }

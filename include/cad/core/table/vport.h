@@ -1,10 +1,18 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 
 
 namespace cad::table
 {
-	class CAD_API Vport : public TableObject
+	class IVportUser :public base::IUser
+	{
+	public:
+		virtual constexpr ~IVportUser() noexcept = default;
+		virtual constexpr const types::String& vport()const noexcept = 0;
+		virtual void setVport(const types::String& name)noexcept = 0;
+	};
+
+	class CAD_API Vport : public TableRecord<IVportUser>
 	{
 	public:
 		enum class RenderMode :types::int16
@@ -19,7 +27,7 @@ namespace cad::table
 
 	private:
 		types::String	_plotStyleSheet;//1
-		types::Point2	_loverLelftCorner;//10,20
+		types::Point2	_loverLeftCorner;//10,20
 		types::Point2	_upperRightCorner;//11,21
 		types::Point2	_center;//12,22
 		types::Point2	_snapBasePoint;//13,23
@@ -29,8 +37,8 @@ namespace cad::table
 		types::Point3	_viewTargetPoint;//17,27,37
 
 		types::Point3	_ucsOrigin;//110,120,130
-		types::Point3	_ucsXaxis;//111,121,131
-		types::Point3	_ucsYaxis;//112,122,132
+		types::Point3	_ucsXAxis;//111,121,131
+		types::Point3	_ucsYAxis;//112,122,132
 
 		types::real		_lensLength=50;//42
 		types::real		_frontClippingPlane=0;//43
@@ -56,15 +64,16 @@ namespace cad::table
 		types::int16	_ambientColor[3]{ (types::int16)250,(types::int16)3355443 ,(types::int16)0};//63, 421, 431
 
 	public:
-		constexpr Vport(const types::String& name)noexcept:TableObject(name){}
+		constexpr Vport(const types::String& name)noexcept:TableRecord(name){}
+		constexpr ~Vport()noexcept = default;
 
 
 #pragma region getters_setters
 		constexpr auto plotStyleSheet()const noexcept { return _plotStyleSheet; }
 		constexpr void setPlotStyleSheet(const types::String& val) noexcept { _plotStyleSheet =val; }
 
-		constexpr auto loverLelftCorner()const noexcept { return _loverLelftCorner; }
-		constexpr void setLoverLelftCorner(const types::Point2& val) noexcept { _loverLelftCorner = val; }
+		constexpr auto loverLeftCorner()const noexcept { return _loverLeftCorner; }
+		constexpr void setLoverLeftCorner(const types::Point2& val) noexcept { _loverLeftCorner = val; }
 
 		constexpr auto upperRightCorner()const noexcept { return _upperRightCorner; }
 		constexpr void setUpperRightCorner(const types::Point2& val) noexcept { _upperRightCorner = val; }
@@ -90,11 +99,11 @@ namespace cad::table
 		constexpr auto ucsOrigin()const noexcept { return _ucsOrigin; }
 		constexpr void setUcsOrigin(const types::Point3& val) noexcept { _ucsOrigin = val; }
 
-		constexpr auto ucsXaxis()const noexcept { return _ucsXaxis; }
-		constexpr void setUcsXaxis(const types::Point3& val) noexcept { _ucsXaxis = val; }
+		constexpr auto ucsXAxis()const noexcept { return _ucsXAxis; }
+		constexpr void setUcsXAxis(const types::Point3& val) noexcept { _ucsXAxis = val; }
 
-		constexpr auto ucsYaxis()const noexcept { return _ucsYaxis; }
-		constexpr void setUcsYaxis(const types::Point3& val) noexcept { _ucsYaxis = val; }
+		constexpr auto ucsYAxis()const noexcept { return _ucsYAxis; }
+		constexpr void setUcsYAxis(const types::Point3& val) noexcept { _ucsYAxis = val; }
 
 		constexpr auto lensLength()const noexcept { return _lensLength; }
 		constexpr void setLensLength(types::real val) noexcept { _lensLength = val; }
@@ -154,7 +163,7 @@ namespace cad::table
 		constexpr void setDefaultLightType(types::int16 val) noexcept { _defaultLightType = val; }
 
 		//index < 3
-		constexpr auto ambientColor(uint8_t i)const noexcept { assert(i<3); return _ambientColor[i]; }
+		constexpr auto ambientColor(uint8_t i)const noexcept { assert(i < 3); return _ambientColor[i]; }
 		//index < 3
 		constexpr void setAmbientColor(uint8_t i,types::int16 val) noexcept { assert(i < 3); _ambientColor[i] = val; }
 #pragma endregion getters_setters
@@ -164,8 +173,8 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "VPORT"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

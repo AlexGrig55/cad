@@ -1,7 +1,7 @@
 #pragma once
 #include "../../util/defines/defines.hpp"
 #include "../../enums/enums.hpp"
-#include "../base/cad_obj.h"
+#include "../base/base.hpp"
 
 namespace cad
 {
@@ -12,7 +12,7 @@ namespace cad
 		types::String	_appName;				//3
 
 		types::int32	_proxyCapabilitiesFlag;	//90
-		types::int32	_inctanceCount;			//91
+		types::int32	_instanceCount;			//91
 		types::boolean	_wasProxyFlag;			//280
 		types::boolean	_isEntityFlag;			//281
 
@@ -20,7 +20,7 @@ namespace cad
 		constexpr Class(const types::String& recordName, const types::String& className,
 			const types::String& appName= "ObjectDBX Classes"):
 			_recoedName(recordName), _name(className), _appName(appName),
-			_proxyCapabilitiesFlag(0), _inctanceCount(0), _wasProxyFlag(0), _isEntityFlag(0)
+			_proxyCapabilitiesFlag(0), _instanceCount(0), _wasProxyFlag(0), _isEntityFlag(0)
 		{}
 
 
@@ -32,7 +32,7 @@ namespace cad
 		constexpr auto proxyCapabilitiesFlag()const noexcept { return _proxyCapabilitiesFlag; }
 		constexpr void setProxyCapabilitiesFlag(types::int32 val) noexcept { _proxyCapabilitiesFlag=val; }
 
-		constexpr auto inctanceCount()const noexcept { return _inctanceCount; }
+		constexpr auto instanceCount()const noexcept { return _instanceCount; }
 
 		constexpr auto wasProxyFlag()const noexcept { return _wasProxyFlag; }
 		constexpr void setWasProxyFlag(types::int32 val) noexcept { _wasProxyFlag = val; }
@@ -46,8 +46,8 @@ namespace cad
 		constexpr const char* dxfName() const noexcept override { return "CLASS"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

@@ -1,6 +1,6 @@
 #include "dxf_reader.h"
 #include <cad/cad.hpp>
-
+#include "util.h"
 
 cad::translator::DXFReader::TypeFile cad::translator::DXFReader::getTypeFile(const types::byte* byteArrayData,
 	size_t size) const noexcept
@@ -103,12 +103,12 @@ using tr = cad::translator::BaseDxfTranslator;
 cad::Error::Code readUnknownTab(cad::translator::DXFInput& input)
 {
 	cad::Error::Code code = cad::Error::Code::NoErr;
-	cad::types::int16 dxfCode;
+	int16_t dxfCode;
 	std::string_view str;
 
 	while (input.isGood() && code == cad::Error::Code::NoErr)
 	{
-		input.readCode(&dxfCode);
+		input.readCode(dxfCode);
 
 		if (dxfCode == tr::DXF_DATA_NAMES[tr::NameSec::Endtab].first)
 		{
@@ -133,7 +133,7 @@ cad::Error::Code cad::translator::DXFReader::readTables(DXFInput& input) noexcep
 
 	while (!stop && input.isGood() && code == Error::Code::NoErr)
 	{
-		input.readCode(&dxfCode);
+		input.readCode(dxfCode);
 		input.readValue(str);
 
 		if (dxfCode != tr::DXF_CODE_OF_NAME_TAB && dxfCode != endSec.first)
@@ -161,14 +161,23 @@ cad::Error::Code cad::translator::DXFReader::readTables(DXFInput& input) noexcep
 			break;
 
 		case StringConverter::toId("UCS"):
-			code = callReadObj(DRAWING->UCSes(), input);
+			code = callReadObj(DRAWING->ucses(), input);
 			break;
 
 		case StringConverter::toId("VIEW"):
-		case StringConverter::toId("BLOCK_RECORD"):
+			code = callReadObj(DRAWING->views(), input);
+			break;
+
 		case StringConverter::toId("DIMSTYLE"):
+			code = callReadObj(DRAWING->dimstyles(), input);
+			break;
+
 		case StringConverter::toId("VPORT"):
-			code = readUnknownTab(input);
+			code = callReadObj(DRAWING->vports(), input);
+			break;
+
+		case StringConverter::toId("BLOCK_RECORD"):
+			code = callReadObj(DRAWING->blocks(), input, 0);
 			break;
 
 		case StringConverter::toId(endSec.second):
@@ -191,21 +200,71 @@ cad::Error::Code cad::translator::DXFReader::readTables(DXFInput& input) noexcep
 
 cad::Error::Code cad::translator::DXFReader::readBlocks(DXFInput& input) noexcept
 {
-	Error::Code code = Error::Code::NoErr;
-
-	code = readUnknown(input);
-	return code;
+	return callReadObj(DRAWING->blocks(), input, 1);
 }
 
 
-cad::Error::Code cad::translator::DXFReader::readEntities(DXFInput& input) noexcept
+cad::Error::Code cad::translator::DXFReader::readEntities(DXFInput& input) noexcept try
 {
 	Error::Code code = Error::Code::NoErr;
 
-	code = readUnknown(input);
+	int16_t dxfCode;
+	std::string_view str;
+	entity::BaseEntity* baseEntity = nullptr;
+
+	auto& modelSpace = DRAWING->blocks().list()[0];
+	auto& paperSpace = DRAWING->blocks().list()[1];
+
+	while (input.isGood() && code == Error::Code::NoErr)
+	{
+		input.readCode(dxfCode);
+		input.readValue(str);
+
+		if (dxfCode != 0)
+		{
+			code = Error::Code::InvalidDataInFile;
+			continue;
+		}
+
+		if (str== tr::DXF_DATA_NAMES[tr::EndSec].second)
+			break;
+
+		baseEntity = translator::createEntityByName(str);
+
+		if (baseEntity == nullptr)
+		{
+			code = Error::Code::InvalidDataInFile;
+			break;
+		}
+
+		code = tr::callReadObj(*baseEntity, input);
+
+		if (code == Error::Code::NoErr)
+		{
+			if (baseEntity->isOnPaperSpace())
+			{
+				paperSpace->addEntity(baseEntity);
+			}
+			else
+			{
+				modelSpace->addEntity(baseEntity);
+			}
+			
+		}
+		else
+		{
+			delete baseEntity;
+		}
+
+		input.toLastData();
+	}
+
 	return code;
 }
-
+catch (...)
+{
+	return cad::Error::Code::OutOfMemory;
+}
 
 cad::Error::Code cad::translator::DXFReader::readObjects(DXFInput& input) noexcept
 {
@@ -216,7 +275,6 @@ cad::Error::Code cad::translator::DXFReader::readObjects(DXFInput& input) noexce
 	return code;
 }
 
-
 cad::Error::Code cad::translator::DXFReader::readUnknown(DXFInput& input) noexcept
 {
 	int16_t dxfCode;
@@ -225,7 +283,7 @@ cad::Error::Code cad::translator::DXFReader::readUnknown(DXFInput& input) noexce
 
 	do
 	{
-		input.readCode(&dxfCode);
+		input.readCode(dxfCode);
 		if (dxfCode == endSec.first)
 		{
 			input.readValue(str);
@@ -246,18 +304,18 @@ cad::Error::Code cad::translator::DXFReader::read(const types::byte* byteArrayDa
 	Error::Code codErr = Error::Code::NoErr;
 
 	auto bufferSize = size;
-	DXFInput* iputPtr = nullptr;
+	DXFInput* inputPtr = nullptr;
 	AsciiDXFInput asciiIput((const types::byte*)byteArrayData, bufferSize);
 	BinaryDXFInput binaryInput((const types::byte*)byteArrayData, bufferSize);
 
 	switch (getTypeFile(byteArrayData,size))
 	{
 	case TypeFile::ASCII:
-		iputPtr = &asciiIput;
+		inputPtr = &asciiIput;
 		break;
 
 	case TypeFile::Binary:
-		iputPtr = &binaryInput;
+		inputPtr = &binaryInput;
 		break;
 
 	case TypeFile::Unk:
@@ -273,10 +331,10 @@ cad::Error::Code cad::translator::DXFReader::read(const types::byte* byteArrayDa
 
 	bool stop = false;
 
-	while (!stop && iputPtr->offset() < bufferSize && codErr == Error::Code::NoErr)
+	while (!stop && inputPtr->isGood() && codErr == Error::Code::NoErr)
 	{
-		iputPtr->readCode(&code);
-		iputPtr->readValue(value);
+		inputPtr->readCode(code);
+		inputPtr->readValue(value);
 
 		if (code != DXF_CODE_OF_NAME_SEC && code != 0)
 		{
@@ -295,31 +353,31 @@ cad::Error::Code cad::translator::DXFReader::read(const types::byte* byteArrayDa
 			break;
 
 		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Header].second):
-			codErr = readHeader(*iputPtr);
+			codErr = readHeader(*inputPtr);
 			break;
 
 		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Classes].second):
-			codErr = readClasses(*iputPtr);
+			codErr = readClasses(*inputPtr);
 			break;
 
 		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Tables].second):
-			codErr = readTables(*iputPtr);
+			codErr = readTables(*inputPtr);
 			break;
 
 		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Blocks].second):
-			codErr = readBlocks(*iputPtr);
+			codErr = readBlocks(*inputPtr);
 			break;
 
-		case StringConverter::toId(DXF_DATA_NAMES[NameSec::BaseEntity].second):
-			codErr = readEntities(*iputPtr);
+		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Entities].second):
+			codErr = readEntities(*inputPtr);
 			break;
 
-		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Obj].second):
-			codErr = readTables(*iputPtr);
+		case StringConverter::toId(DXF_DATA_NAMES[NameSec::Objects].second):
+			codErr = readObjects(*inputPtr);
 			break;
 
 		default:
-			codErr = readUnknown(*iputPtr);
+			codErr = readUnknown(*inputPtr);
 			break;
 		}
 	}

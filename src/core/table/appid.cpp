@@ -1,14 +1,10 @@
 #include <cad/core/table/appid.h>
 #include "../../translator/translator.hpp"
 
-enum Codes
-{
-    Flag = 70
-};
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::Appid::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Appid::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode = -1;
     std::string_view str;
@@ -17,36 +13,15 @@ cad::Error::Code cad::table::Appid::readDXF(translator::DXFInput& reader) noexce
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
-        switch (dxfCode)
-        {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
-
-        default:
-            errCode = TableObject::readDXF(reader);
-            break;
-        }
+        stop = !readBaseTabRec(dxfCode, reader);
     }
 
     return errCode;
 }
 
-cad::Error::Code cad::table::Appid::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Appid::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
-
-    if (errCode != Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100, "AcDbRegAppTableRecord");
-
-    return errCode;
+    return writeTabRecordHeader(dxfName(), "AcDbRegAppTableRecord", writer);
 }

@@ -15,7 +15,7 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::Style::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Style::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode=-1;
     std::string_view str;
@@ -24,17 +24,10 @@ cad::Error::Code cad::table::Style::readDXF(translator::DXFInput& reader) noexce
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::FixedHeight:
             reader.readValue(_fixedHeight);
@@ -69,7 +62,7 @@ cad::Error::Code cad::table::Style::readDXF(translator::DXFInput& reader) noexce
             break;
 
         default:
-            errCode = TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode, reader);
             break;
         }
     }
@@ -77,19 +70,12 @@ cad::Error::Code cad::table::Style::readDXF(translator::DXFInput& reader) noexce
     return errCode;
 }
 
-cad::Error::Code cad::table::Style::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Style::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
-
-    if (errCode!= Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100,"AcDbTextStyleTableRecord");
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbTextStyleTableRecord", writer);
 
     writer.writeData(Codes::FixedHeight,fixedHeight());
     writer.writeData(Codes::WidthFactor, widthFactor());
-    writer.writeData(Codes::ObliqueAngle, obliqueAngle());
     writer.writeData(Codes::ObliqueAngle, obliqueAngle());
     writer.writeData(Codes::GenerationFlag, generationFlag());
     writer.writeData(Codes::LastHeight, lastHeight());

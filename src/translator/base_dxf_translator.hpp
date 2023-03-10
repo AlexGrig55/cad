@@ -20,8 +20,8 @@ namespace cad::translator
 
 		Database* const DRAWING;
 
-		static inline auto callReadObj(base::ICadObject& obj, DXFInput& reader)noexcept { return obj.readDXF(reader); }
-		static inline auto callWriteObj(base::ICadObject& obj, DXFOutput& writer)noexcept { return obj.writeDXF(writer); }
+		static inline auto callReadObj(base::ICadObject& obj, DXFInput& reader, char auxilData = -1)noexcept { return obj.readDXF(reader,auxilData); }
+		static inline auto callWriteObj(base::ICadObject& obj, DXFOutput& writer, char auxilData = -1)noexcept { return obj.writeDXF(writer,auxilData); }
 
 		constexpr void setLocale(enums::Locale val)noexcept { _locale = val; }
 		constexpr auto locale()const noexcept{ return _locale; }
@@ -35,8 +35,8 @@ namespace cad::translator
 			Classes,
 			Tables,
 			Blocks,
-			BaseEntity,
-			Obj,
+			Entities,
+			Objects,
 
 			Table,
 			Endtab,

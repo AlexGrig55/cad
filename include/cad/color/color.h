@@ -7,28 +7,54 @@
 
 namespace cad
 {
-	class Color
+	class CAD_API Color
 	{
-		uint8_t			_rgb[3];
-		enums::Color	_state;
+	public:
+		enum DefaultAci :types::int16
+		{
+			ByBlock = 0,
+			Red=1,
+			Yellow=2,
+			Green=3,
+			Cyan=4,
+			Blue=5,
+			Magenta=6,
+			White=7,
+			ByLayer=256
+		};
+
+	private:
+		types::int16 _aci;
+		std::array<uint8_t, 3> _rgb;
+
+		static const std::vector<std::array<uint8_t, 3>> aciToRgbLookup;
+
+		//get autocad color index
+		static types::int16 rgbToACI(uint8_t r, uint8_t g, uint8_t b) noexcept;
 
 	public:
-		constexpr Color(uint8_t r, uint8_t g, uint8_t b):
-			_state(enums::Color::Other), _rgb{r,g,b} {}
-		explicit constexpr Color(enums::Color val) : _state(val), _rgb{} {}
-		//from Autocad Color Index
-		explicit constexpr Color(types::int16 ACI) : _state(enums::Color::Other), _rgb{} {}
+		Color(uint8_t r, uint8_t g, uint8_t b)noexcept;
 
+		//from Autocad Color Index
+		//ACI is invalid - set White color
+		explicit constexpr Color(types::int16 ACI)noexcept:
+			_aci((ACI > ByLayer || ACI < ByBlock) ? White : ACI) {	_rgb = aciToRgbLookup[_aci]; }
+
+		//autocad color index
+		constexpr auto aci()const noexcept { return _aci; }
 		constexpr auto r()const noexcept { return _rgb[0]; }
 		constexpr auto g()const noexcept { return _rgb[1]; }
 		constexpr auto b()const noexcept { return _rgb[2]; }
 
-		types::int16 toACI()const { return 0; }
-		uint32_t toRGB24Bit()const { return *(uint32_t*)_rgb; }
+		constexpr uint32_t toRGB24Bit()const noexcept { return *(uint32_t*)&_rgb; }
 
-		constexpr auto state()const { return _state; }
+		constexpr bool isByLayer()const noexcept{ return DefaultAci::ByLayer == _aci; }
+		constexpr bool isByBlock()const noexcept{ return DefaultAci::ByBlock == _aci; }
 
-		bool isByLayer()const { return enums::Color::ByLayer == _state; }
-		bool isByBlock()const { return enums::Color::ByBlock == _state; }
+		constexpr bool operator==(types::int16 ACI)const noexcept { return _aci== ACI; }
+		constexpr bool operator!=(types::int16 ACI)const noexcept { return _aci != ACI; }
+
+		constexpr bool operator==(const Color& other)const noexcept { return r() == other.r() && g() == other.g() && b() == other.b(); }
+		constexpr bool operator!=(const Color& other)const noexcept { return !(*this==other); }
 	};
 }

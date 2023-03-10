@@ -3,7 +3,7 @@
 
 
 
-class CAD_API cad::Database::Objects: public base::ICadObject
+class cad::Database::Objects: public base::ICadObject
 {
 	
 public:
@@ -21,7 +21,7 @@ public:
 #pragma region overrides
 	constexpr const char* dxfName() const noexcept override { return "OBJECTS"; }
 protected:
-	cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-	cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+	cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+	cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 };

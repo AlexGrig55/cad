@@ -4,7 +4,7 @@
 #include "../../enums/enums.hpp"
 #include "../../errors/errors.h"
 #include "../block/block.h"
-#include "../table/tables.hpp"
+#include "../table/table_records.hpp"
 
 namespace cad
 {
@@ -12,7 +12,7 @@ namespace cad
 	{
 		//default values:
 		//version=2018; locale = Cyrillic; err = nullptr; binary = false
-		class SaveDB
+		class Save
 		{
 			enums::Version			_version;
 			enums::Locale			_locale;
@@ -20,7 +20,7 @@ namespace cad
 			bool					_binary;
 
 		public:
-			constexpr SaveDB()noexcept :_version(enums::Version::V2018),
+			constexpr Save()noexcept :_version(enums::Version::V2018),
 				_locale(enums::Locale::Cyrillic),
 				_err(nullptr), _binary(false){}
 
@@ -41,9 +41,18 @@ namespace cad
 		};
 	}
 
+	namespace base
+	{
+		class Handler;
+	}
+
 	class Database
 	{
+		friend class base::Handler;
+
 	private:
+		class Initializer;
+
 		template<class T>
 		class NamedContainer;
 
@@ -54,28 +63,33 @@ namespace cad
 		template<class T>
 		class Table;
 
+
 	private:
-		Variables*	_variables;
-		Classes*	_classes;
+		Variables* _variables = nullptr;
+		Classes* _classes = nullptr;
 
-		NamedContainer<table::Appid>*	_appids;
-		NamedContainer<table::Linetype>*_linetypes;
-		NamedContainer<table::Layer>*	_layers;
-		NamedContainer<table::Style>*	_styles;
-		NamedContainer<table::UCS>*		_UCSes;
-		NamedContainer<table::View>*	_views;
-		NamedContainer<table::Vport>*	_vports;
-		NamedContainer<table::Dimstyle>*_dimstyles;
+		NamedContainer<table::Appid>* _appids = nullptr;
+		NamedContainer<table::Linetype>* _linetypes = nullptr;
+		NamedContainer<table::Layer>* _layers = nullptr;
+		NamedContainer<table::Style>* _styles = nullptr;
+		NamedContainer<table::Ucs>* _ucses = nullptr;
+		NamedContainer<table::View>* _views = nullptr;
+		NamedContainer<table::Vport>* _vports = nullptr;
+		NamedContainer<table::Dimstyle>* _dimstyles = nullptr;
 
-		NamedContainer<Block>*			_blocks;
+		Blocks* _blocks = nullptr;
+		Block* _modelSpace = nullptr;
 
-		Objects*	_objects;
+		Objects* _objects = nullptr;
 
-		bool		_isValid;
+		size_t _actualHandle=1;
+
+		bool _isValid;
+
 
 	public:
 		//Create default db
-		explicit Database(Error::Code* err = nullptr)noexcept :Database(std::filesystem::path()) {}
+		explicit Database(Error::Code* err = nullptr)noexcept :Database(std::filesystem::path(), err) {}
 		//Create db by file
 		explicit Database(const std::filesystem::path& pathToFile, Error::Code* err = nullptr)noexcept;
 		//Create db by byte buffer
@@ -85,11 +99,11 @@ namespace cad
 
 
 #pragma region getters_setters
-		constexpr Variables& variables()noexcept { return *_variables; }
-		constexpr const Variables& variables()const noexcept { return *_variables; }
+		constexpr auto& variables()noexcept { return *_variables; }
+		constexpr auto& variables()const noexcept { return *_variables; }
 
-		constexpr Classes& classes()noexcept { return *_classes; }
-		constexpr const Classes& classes()const noexcept { return *_classes; }
+		constexpr auto& classes()noexcept { return *_classes; }
+		constexpr auto& classes()const noexcept { return *_classes; }
 
 		constexpr auto& appids()noexcept { return *_appids; }
 		constexpr auto& appids()const noexcept { return *_appids; }
@@ -102,9 +116,9 @@ namespace cad
 
 		constexpr auto& styles()noexcept { return *_styles; }
 		constexpr auto& styles()const noexcept { return *_styles; }
-		
-		constexpr auto& UCSes()noexcept { return *_UCSes; }
-		constexpr auto& UCSes()const noexcept { return *_UCSes; }
+
+		constexpr auto& ucses()noexcept { return *_ucses; }
+		constexpr auto& ucses()const noexcept { return *_ucses; }
 
 		constexpr auto& views()noexcept { return *_views; }
 		constexpr auto& views()const noexcept { return *_views; }
@@ -112,43 +126,49 @@ namespace cad
 		constexpr auto& vports()noexcept { return *_vports; }
 		constexpr auto& vports()const noexcept { return *_vports; }
 
+		constexpr auto& dimstyles()noexcept { return *_dimstyles; }
+		constexpr auto& dimstyles()const noexcept { return *_dimstyles; }
+
 		constexpr auto& blocks()noexcept { return *_blocks; }
 		constexpr auto& blocks()const noexcept { return *_blocks; }
 
-		constexpr Objects& objects()noexcept { return *_objects; }
-		constexpr const Objects& objects()const noexcept { return *_objects; }
+		constexpr auto& objects()noexcept { return *_objects; }
+		constexpr auto& objects()const noexcept { return *_objects; }
+
+		constexpr auto& modelSpace()const noexcept { return *_modelSpace; }
+		constexpr auto& modelSpace() noexcept { return *_modelSpace; }
 
 		//Must be called to check whether the database has been created.
 		//If it returns false, you cannot use this database
 		constexpr bool isValid()const noexcept { return _isValid; }
 
-		//return null if handle not exsist
+		//return null if handle not exists
 		base::Handler* getObjectByHandle(size_t handle)noexcept;
-		//return null if handle not exsist
+		//return null if handle not exists
 		const base::Handler* getObjectByHandle(size_t handle)const noexcept;
 #pragma endregion getters_setters
 
 
 #pragma region actions
 		bool save(const std::filesystem::path& path,
-			const options::SaveDB& options= options::SaveDB() )noexcept;
+			const options::Save& options = options::Save())noexcept;
 		bool save(std::vector<types::byte>& buffer,
-			const options::SaveDB& options = options::SaveDB())noexcept;
+			const options::Save& options = options::Save())noexcept;
 
 	private:
-		Error::Code readFile(const std::filesystem::path& path,std::vector<types::byte>& buffer)noexcept;
+		Error::Code readFile(const std::filesystem::path& path, std::vector<types::byte>& buffer)noexcept;
 		Error::Code readByteArray(const types::byte* byteArrayData, size_t size)noexcept;
 		Error::Code writeFile(const std::filesystem::path& path, const std::vector<types::byte>& byteArr)noexcept;
 		Error::Code writeByteArray(std::vector<types::byte>& buffer, bool isBinary)noexcept;
 
-		void init()noexcept;
-		bool isContainersCreated()const noexcept;
+		Error::Code init()noexcept;
+
 		bool isValidPath(const std::filesystem::path& path)const noexcept;
 
 		enums::Version version()const noexcept;
 		enums::Locale locale()const noexcept;
 
-		size_t calculateApproximateFileSize()const noexcept;
+		size_t calculateApproximateFileSize(bool isBinary)const noexcept;
 
 		void clearDB()noexcept;
 #pragma endregion actions

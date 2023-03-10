@@ -15,7 +15,7 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::UCS::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Ucs::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode=-1;
     std::string_view str;
@@ -25,17 +25,10 @@ cad::Error::Code cad::table::UCS::readDXF(translator::DXFInput& reader) noexcept
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::Origin_x:
         case Codes::Origin_y:
@@ -71,7 +64,7 @@ cad::Error::Code cad::table::UCS::readDXF(translator::DXFInput& reader) noexcept
             break;
 
         default:
-            errCode=TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode, reader);
             break;
         }
     }
@@ -79,15 +72,9 @@ cad::Error::Code cad::table::UCS::readDXF(translator::DXFInput& reader) noexcept
     return errCode;
 }
 
-cad::Error::Code cad::table::UCS::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Ucs::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
-
-    if (errCode!= Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100,"AcDbUCSTableRecord");
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbUCSTableRecord", writer);
 
     writer.writeData(Codes::Origin_x, origin());
     writer.writeData(Codes::XDirect_x, xDirect());

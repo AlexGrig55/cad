@@ -50,29 +50,26 @@ uint16_t cad::translator::AsciiDXFInput::readRow()const noexcept
 	return res+1;
 }
 
-void cad::translator::AsciiDXFInput::readCode(int16_t* code) noexcept
+void cad::translator::AsciiDXFInput::readCode(int16_t& code) noexcept
 {
-	auto localOffset = readRow();
-	int16_t tmpCode;
+	setLastCodePos();
 
-	readIntegralNumber((const char*)(currentPos()), localOffset, tmpCode);
+	auto localOffset = readRow();
+
+	readIntegralNumber((const char*)(currentPos()), localOffset, code);
 	addOffset(localOffset);
 
-	if (tmpCode == 999)//comment code
+	if (code == 999)//comment code
 	{
-		while (tmpCode == 999)
+		while (code == 999)
 		{
 			readValue();
 
 			localOffset = readRow();
-			readIntegralNumber((const char*)(currentPos()), localOffset, tmpCode);
+			readIntegralNumber((const char*)(currentPos()), localOffset, code);
 			addOffset(localOffset);
 		}
 	}
-
-	setLastCode(tmpCode);
-	if (code)
-		*code = tmpCode;
 }
 
 void cad::translator::AsciiDXFInput::readValue() noexcept
@@ -113,23 +110,6 @@ void cad::translator::AsciiDXFInput::readValue(types::String& val) noexcept
 	}
 }
 
-void cad::translator::AsciiDXFInput::readValue(int code, int codeX, types::Point2& val) noexcept
-{
-	auto localOffset = readRow();
-
-	readFloatingNumber((const char*)(currentPos()), localOffset, val[code/codeX-1]);
-
-	addOffset(localOffset);
-}
-
-void cad::translator::AsciiDXFInput::readValue(int code, int codeX, types::Point3& val) noexcept
-{
-	auto localOffset = readRow();
-
-	readFloatingNumber((const char*)(currentPos()), localOffset, val[code/codeX-1]);
-
-	addOffset(localOffset);
-}
 
 void cad::translator::AsciiDXFInput::readValue(types::real& val) noexcept
 {
@@ -174,18 +154,23 @@ void cad::translator::AsciiDXFInput::readValue(types::boolean& val) noexcept
 	val = tmpVal;
 }
 
-void cad::translator::AsciiDXFInput::readValue(size_t& val, int base) noexcept
+size_t cad::translator::AsciiDXFInput::readHandle() noexcept
 {
+	size_t res;
+
 	auto localOffset = readRow();
 
-	readIntegralNumber((const char*)(currentPos()), localOffset, val, base);
+	readIntegralNumber((const char*)(currentPos()), localOffset, res, 16);
 
 	addOffset(localOffset);
+
+	return res;
 }
 
-
-void cad::translator::BinaryDXFInput::readCode(int16_t* code) noexcept
+void cad::translator::BinaryDXFInput::readCode(int16_t& code) noexcept
 {
+	setLastCodePos();
+
 
 }
 
@@ -204,14 +189,6 @@ void cad::translator::BinaryDXFInput::readValue(types::String& val) noexcept
 	readValue(strView);
 
 
-}
-
-void cad::translator::BinaryDXFInput::readValue(int code, int codeX, types::Point2& val) noexcept
-{
-}
-
-void cad::translator::BinaryDXFInput::readValue(int code, int codeX, types::Point3& val) noexcept
-{
 }
 
 void cad::translator::BinaryDXFInput::readValue(types::real& val) noexcept
@@ -238,6 +215,12 @@ void cad::translator::BinaryDXFInput::readValue(types::boolean& val) noexcept
 {
 }
 
-void cad::translator::BinaryDXFInput::readValue(size_t& val, int base) noexcept
+size_t cad::translator::BinaryDXFInput::readHandle() noexcept
 {
+	size_t res=0;
+
+
+
+	return res;
 }
+

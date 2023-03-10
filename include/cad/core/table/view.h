@@ -1,10 +1,18 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 
 
 namespace cad::table
 {
-	class CAD_API View : public TableObject
+	class IViewUser :public base::IUser
+	{
+	public:
+		virtual constexpr ~IViewUser() noexcept = default;
+		virtual constexpr const types::String& view()const noexcept = 0;
+		virtual void setView(const types::String& name)noexcept = 0;
+	};
+
+	class CAD_API View : public TableRecord< IViewUser>
 	{
 	public:
 		enum class RenderMode :types::int16
@@ -22,8 +30,8 @@ namespace cad::table
 		types::Point3	_directionFromTarget={0,0,1};//11, 21, 31
 		types::Point3	_targetPoint;//12, 22, 32
 		types::Point3	_ucsOrigin;//110, 120, 130
-		types::Point3	_ucsXaxis;//111, 121, 131
-		types::Point3	_ucsYaxis;//112, 122, 132
+		types::Point3	_ucsXAxis;//111, 121, 131
+		types::Point3	_ucsYAxis;//112, 122, 132
 
 		types::real		_viewHeight = 100;//40
 		types::real		_viewWidth = 200;//41
@@ -40,7 +48,8 @@ namespace cad::table
 		OrthoType		_ucsOrthoType = OrthoType::No;//79
 
 	public:
-		constexpr View(const types::String& name)noexcept:TableObject(name){}
+		constexpr View(const types::String& name)noexcept:TableRecord(name){}
+		constexpr ~View()noexcept = default;
 
 #pragma region getters_setters
 		constexpr auto& center()const noexcept { return _center; }
@@ -55,11 +64,11 @@ namespace cad::table
 		constexpr auto& ucsOrigin()const noexcept { return _ucsOrigin; }
 		constexpr void setUcsOrigin(const types::Point3& val) noexcept { _ucsOrigin = val; }
 
-		constexpr auto& ucsXaxis()const noexcept { return _ucsXaxis; }
-		constexpr void setUcsXaxis(const types::Point3& val) noexcept { _ucsXaxis = val; }
+		constexpr auto& ucsXAxis()const noexcept { return _ucsXAxis; }
+		constexpr void setUcsXAxis(const types::Point3& val) noexcept { _ucsXAxis = val; }
 
-		constexpr auto& ucsYaxis()const noexcept { return _ucsYaxis; }
-		constexpr void setUcsYaxis(const types::Point3& val) noexcept { _ucsYaxis = val; }
+		constexpr auto& ucsYAxis()const noexcept { return _ucsYAxis; }
+		constexpr void setUcsYAxis(const types::Point3& val) noexcept { _ucsYAxis = val; }
 
 		constexpr auto viewHeight()const noexcept { return _viewHeight; }
 		constexpr void setViewHeight(types::real val) noexcept { _viewHeight = val; }
@@ -103,8 +112,8 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "VIEW"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

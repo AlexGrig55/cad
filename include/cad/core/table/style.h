@@ -1,9 +1,9 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 
 namespace cad::table
 {
-	class IStyleUser
+	class IStyleUser :public base::IUser
 	{
 	public:
 		virtual ~IStyleUser() = default;
@@ -11,24 +11,25 @@ namespace cad::table
 		virtual void setStyle(const types::String& name)noexcept = 0;
 	};
 
-	class CAD_API Style : public TableObject
+	class CAD_API Style : public TableRecord<IStyleUser>
 	{
 		types::String	_fontFileName;//3
 		types::String	_bigFontFileName;//4
 
-		types::real _fixedHeight;//40
-		types::real _lastHeight;//42
-		types::real _widthFactor;//41
-		types::real _obliqueAngle;//50
+		types::real		_fixedHeight;//40
+		types::real		_lastHeight;//42
+		types::real		_widthFactor;//41
+		types::real		_obliqueAngle;//50
 
-		types::int32 _trueTypeFlags;//1071
-		types::int16 _generationFlag;//71
+		types::int32	_trueTypeFlags;//1071
+		types::int16	_generationFlag;//71
 
 	public:
 		constexpr Style(const types::String& name)noexcept :
-			TableObject(name), _fixedHeight(0), _lastHeight(0.2), _widthFactor(1), _obliqueAngle(0),
+			TableRecord(name), _fixedHeight(0), _lastHeight(0.2), _widthFactor(1), _obliqueAngle(0),
 			_generationFlag(0), _trueTypeFlags(0)
 		{}
+		constexpr ~Style()noexcept = default;
 
 #pragma region getters_setters
 		constexpr auto& fontFileName()const noexcept { return _fontFileName; }
@@ -61,8 +62,8 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "STYLE"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

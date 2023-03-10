@@ -3,7 +3,7 @@
 #include "../../../util/container/container.hpp"
 
 template<class T>
-class CAD_API cad::Database::Table: public base::Handler
+class cad::Database::Table: public base::Handler
 {
 	util::Container<T>	_list;
 	const char*			_nameTable;
@@ -29,7 +29,7 @@ public:
 	constexpr const char* dxfName() const noexcept override { return _nameTable; }
 
 protected:
-	cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-	cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+	cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+	cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 };

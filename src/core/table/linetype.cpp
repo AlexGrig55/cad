@@ -35,7 +35,7 @@ cad::table::Linetype::Element* cad::table::Linetype::getCurrentElementForRead(ui
     return &_elements.back();
 }
 
-cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode=-1;
     std::string_view str;
@@ -47,17 +47,10 @@ cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader) noe
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::DescriptiveText:
             reader.readValue(_descriptiveText);
@@ -78,7 +71,7 @@ cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader) noe
         case Codes::PtrToStyle:
             currentElement = getCurrentElementForRead(auxilFlag, 2);
             if (currentElement)
-                reader.readValue(currentElement->_ptrToStyle, 16);
+                currentElement->_ptrToStyle = reader.readHandle();
             else
                 errCode = Error::Code::OutOfMemory;
             break;
@@ -124,7 +117,7 @@ cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader) noe
             break;
 
         default:
-            errCode=TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode, reader);
             break;
         }
     }
@@ -132,16 +125,11 @@ cad::Error::Code cad::table::Linetype::readDXF(translator::DXFInput& reader) noe
     return errCode;
 }
 
-cad::Error::Code cad::table::Linetype::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Linetype::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbLinetypeTableRecord", writer);
 
-    if (errCode!= Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100, "AcDbLinetypeTableRecord");
-
+    writer.writeData(Codes::DescriptiveText, _descriptiveText);
     writer.writeData(72, types::int16(65));
     writer.writeData(73, types::int16(countElements()));
     writer.writeData(Codes::PatternLength, patternLength());
@@ -157,7 +145,7 @@ cad::Error::Code cad::table::Linetype::writeDXF(translator::DXFOutput& writer) n
             errCode = writer.writeData(Codes::ShapeNumber, 0);
 
         if (e.elementType() > 0)
-            errCode = writer.writeData(Codes::PtrToStyle, e.ptrToStyle(), 16);
+            errCode = writer.writeHandle(Codes::PtrToStyle, e.ptrToStyle());
 
         if (e.scale() != 0 && e.scale() != 1)
             errCode = writer.writeData(Codes::Scale, e.scale());

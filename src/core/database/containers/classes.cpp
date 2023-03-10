@@ -13,9 +13,9 @@ cad::Database::Classes::Classes():util::ConstContainer<Class>
 {
 }
 
-cad::Error::Code cad::Database::Classes::readDXF(translator::DXFInput& reader) noexcept
+cad::Error::Code cad::Database::Classes::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
-	int16_t code;
+	int16_t dxfCode;
 	std::string_view str;
 
 	Error::Code errCode = Error::Code::NoErr;
@@ -24,8 +24,8 @@ cad::Error::Code cad::Database::Classes::readDXF(translator::DXFInput& reader) n
 
 	while (!stop && reader.isGood() && errCode == Error::Code::NoErr)
 	{
-		reader.readCode(&code);
-		if (code == endSec.first)
+		reader.readCode(dxfCode);
+		if (dxfCode == endSec.first)
 		{
 			reader.readValue(str);
 			switch (StringConverter::toId(str))
@@ -49,7 +49,7 @@ cad::Error::Code cad::Database::Classes::readDXF(translator::DXFInput& reader) n
 	return errCode;
 }
 
-cad::Error::Code cad::Database::Classes::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::Database::Classes::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
 	const auto& sec = tr::DXF_DATA_NAMES[tr::Section];
 	const auto& endSec = tr::DXF_DATA_NAMES[tr::EndSec];

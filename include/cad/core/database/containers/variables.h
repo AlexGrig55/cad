@@ -7,7 +7,7 @@
 #include <array>
 
 
-class CAD_API cad::Database::Variables: public base::ICadObject
+class cad::Database::Variables: public base::ICadObject
 {
 	static constexpr const int COUNT_GENERAL_VARS = 19;
 
@@ -79,17 +79,17 @@ public:
 
 
 #pragma region getters_setters
-	//Get var by name, return null if not exsist, find general and custom vars
-	Variable* variable(const char* name)noexcept;
-	//Get var by name, return null if not exsist, find general and custom vars
-	const Variable* variable(const char* name)const noexcept;
+	//return null if not exist
+	Variable* varByName(std::string_view name)noexcept;
+	//return null if not exist
+	const Variable* varByName(std::string_view name)const noexcept;
 
-	//Get var by index, return null if not exsist, find general and custom vars.
+	//return null if not exist
 	//index_custom_var = local_custom_index + count_general_vars
-	Variable* variable(uint32_t i)noexcept;
-	//Get var by index, return null if not exsist, find general and custom vars.
+	Variable* varByIndex(uint32_t i)noexcept;
+	//return null if not exist
 	//index_custom_var = local_custom_index + count_general_vars
-	const Variable* variable(uint32_t i)const noexcept;
+	const Variable* varByIndex(uint32_t i)const noexcept;
 
 	constexpr auto& generalVariables()noexcept { return _generalVarsInc; }
 	constexpr auto& generalVariables()const noexcept { return _generalVarsInc; }
@@ -97,9 +97,9 @@ public:
 	constexpr auto& customVariables()const noexcept { return _customVars; }
 
 	//return count of general variables
-	constexpr auto countGeneral()const { return _generalVars.size(); }
+	constexpr auto generalCount()const { return _generalVars.size(); }
 	//return count of custom variables
-	inline auto countCustom()const { return _customVars.size(); }
+	inline auto customCount()const { return _customVars.size(); }
 
 
 #pragma endregion getters_setters
@@ -113,14 +113,14 @@ public:
 	void remove(uint32_t i, bool globalIndex = false);
 	inline void clearCustomVars()noexcept { _customVars.clear(); }
 
-	bool isVariableExsist(const char* name)const noexcept { return variable(name) != nullptr; }
+	bool isContains(std::string_view name)const noexcept { return varByName(name) != nullptr; }
 #pragma endregion actions
 
 
 #pragma region overrides
 	constexpr const char* dxfName() const noexcept override { return "HEADER"; }
 protected:
-	cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-	cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+	cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+	cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 };

@@ -40,7 +40,7 @@ cad::Database::Variables::Variables(enums::Locale locale, enums::Version ver)noe
 	_customVars.reserve(140);
 }
 
-cad::Variable* cad::Database::Variables::variable(const char* name) noexcept
+cad::Variable* cad::Database::Variables::varByName(std::string_view name) noexcept
 {
 	for (auto& i : _generalVars)
 	{
@@ -59,7 +59,7 @@ cad::Variable* cad::Database::Variables::variable(const char* name) noexcept
 	return nullptr;
 }
 
-const cad::Variable* cad::Database::Variables::variable(const char* name) const noexcept
+const cad::Variable* cad::Database::Variables::varByName(std::string_view name) const noexcept
 {
 	for (auto& i : _generalVars)
 	{
@@ -78,15 +78,15 @@ const cad::Variable* cad::Database::Variables::variable(const char* name) const 
 	return nullptr;
 }
 
-cad::Variable* cad::Database::Variables::variable(uint32_t i) noexcept
+cad::Variable* cad::Database::Variables::varByIndex(uint32_t i) noexcept
 {
 	cad::Variable* res = nullptr;
-	if (i>= countGeneral()+countCustom())
+	if (i>= generalCount()+customCount())
 		return res;
 
-	if (i>= countGeneral())
+	if (i>= generalCount())
 	{
-		i -= countGeneral();
+		i -= generalCount();
 		auto iter = _customVars.begin();
 		std::advance(iter,i);
 		res = &*iter;
@@ -98,18 +98,18 @@ cad::Variable* cad::Database::Variables::variable(uint32_t i) noexcept
 	return res;
 }
 
-const cad::Variable* cad::Database::Variables::variable(uint32_t i) const noexcept
+const cad::Variable* cad::Database::Variables::varByIndex(uint32_t i) const noexcept
 {
 	const cad::Variable* res = nullptr;
-	if (i >= countGeneral() + countCustom())
+	if (i >= generalCount() + customCount())
 		return res;
 
-	if (i >= countGeneral())
+	if (i >= generalCount())
 	{
-		i -= countGeneral();
-		auto iter = _customVars.begin();
-		std::advance(iter, i);
-		res = &*iter;
+		i -= generalCount();
+		auto iterator = _customVars.begin();
+		std::advance(iterator, i);
+		res = &*iterator;
 	}
 	else
 	{
@@ -120,8 +120,8 @@ const cad::Variable* cad::Database::Variables::variable(uint32_t i) const noexce
 
 void cad::Database::Variables::add(const Variable& var)
 {
-	if (isVariableExsist(var.name().data()))
-		throw std::exception("Variable with same name already exsists");
+	if (isContains(var.name()))
+		throw std::exception("Variable with same name already exists");
 	else if(var.typeData()==types::EType::Unk)
 		throw std::exception("Invalid variable type");
 	else
@@ -131,7 +131,7 @@ void cad::Database::Variables::add(const Variable& var)
 void cad::Database::Variables::remove(uint32_t i, bool globalIndex)
 {
 	if (globalIndex)
-		i -= countGeneral();
+		i -= generalCount();
 
 	assert(i < _customVars.size());
 
@@ -139,11 +139,10 @@ void cad::Database::Variables::remove(uint32_t i, bool globalIndex)
 }
 
 using tr = cad::translator::BaseDxfTranslator;
-
-cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader) noexcept
+#include <iostream>
+cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
 	int16_t code;
-	reader.readCode(&code);
 	std::string_view str;
 	std::string tmpStr;
 
@@ -152,25 +151,15 @@ cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader)
 	Error::Code errCode = Error::Code::NoErr;
 	bool stop = false;
 
+	reader.readCode(code);
 	while (!stop && reader.isGood() && errCode == Error::Code::NoErr)
 	{
-		code = reader.lastCode();
 		reader.readValue(str);
 
-		switch (code)
-		{
-		case tr::DXF_DATA_NAMES[tr::EndSec].first:
-
-			if (str != tr::DXF_DATA_NAMES[tr::EndSec].second)
-				errCode = Error::Code::InvalidDataInFile;
-
-			stop = true;
-			break;
-
-		case 9:
+		if (str.starts_with('$'))
 		{
 			tmpStr = str;
-			varPtr = this->variable(tmpStr.data());
+			varPtr = this->varByName(tmpStr);
 			bool isGeneralVar = varPtr;
 			if (!isGeneralVar)
 			{
@@ -183,7 +172,7 @@ cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader)
 
 			if (isGeneralVar)
 			{
-				if (varPtr==&_generalVars[VarIndex::Version])
+				if (varPtr == &_generalVars[VarIndex::Version])
 				{
 					reader.setVersion(util::VersionsList::getVersionNum(
 						_generalVars[VarIndex::Version].get<types::String>()));
@@ -195,10 +184,12 @@ cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader)
 				}
 			}
 		}
+		else if (str== tr::DXF_DATA_NAMES[tr::EndSec].second)
+		{
 			break;
-
-		default:
-			stop = true;
+		}
+		else
+		{
 			errCode = Error::Code::InvalidDataInFile;
 		}
 	}
@@ -206,14 +197,9 @@ cad::Error::Code cad::Database::Variables::readDXF(translator::DXFInput& reader)
 	return errCode;
 }
 
-cad::Error::Code cad::Database::Variables::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::Database::Variables::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-
-	const auto& sec = tr::DXF_DATA_NAMES[tr::Section];
-	const auto& endSec = tr::DXF_DATA_NAMES[tr::EndSec];
-
-	Error::Code errCode = writer.writeData(sec.first, sec.second);
-	writer.writeData(2, dxfName());
+	Error::Code errCode = Error::Code::NoErr;
 
 	for (auto& var : this->_generalVars)
 	{
@@ -228,7 +214,7 @@ cad::Error::Code cad::Database::Variables::writeDXF(translator::DXFOutput& write
 			return errCode;
 	}
 
-	return writer.writeData(endSec.first, endSec.second);
+	return errCode;
 }
 
 

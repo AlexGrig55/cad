@@ -1,11 +1,19 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 
 #include <variant>
+#include <string_view>
 
 namespace cad::table
 {
-	class CAD_API Dimstyle : public TableObject
+	class IDimstyleUser :public base::IUser
+	{
+	public:
+		virtual constexpr const types::String& dimstyle()const noexcept = 0;
+		virtual constexpr void setDimstyle(const types::String& name) = 0;
+	};
+
+	class CAD_API Dimstyle : public TableRecord<IDimstyleUser>
 	{
 	public:
 		class Variable
@@ -50,20 +58,23 @@ namespace cad::table
 		};
 
 	private:
-		util::ConstContainer<Variable> _variables;
+		util::Container<Variable> _variables;
+
+	private:
+		void init();
 
 	public:
 		Dimstyle(const types::String& name)noexcept;
 
 #pragma region getters_setters
-		constexpr auto& variables()const noexcept { return _variables; }
-		//Get var by name, return null if not exsist, find general and custom vars
+		constexpr const util::ConstContainer<Variable>& variables()const noexcept { return _variables; }
+		//Get var by name, return null if not exists, find general and custom vars
 		Variable* variableByName(std::string_view name)noexcept;
-		//Get var by name, return null if not exsist, find general and custom vars
+		//Get var by name, return null if not exists, find general and custom vars
 		const Variable* variableByName(std::string_view name)const noexcept;
-		//Get var by code, return null if not exsist, find general and custom vars
+		//Get var by code, return null if not exists, find general and custom vars
 		Variable* variableByCode(uint16_t code)noexcept;
-		//Get var by code, return null if not exsist, find general and custom vars
+		//Get var by code, return null if not exists, find general and custom vars
 		const Variable* variableByCode(uint16_t code)const noexcept;
 #pragma endregion getters_setters
 
@@ -71,8 +82,8 @@ namespace cad::table
 		constexpr const char* dxfName() const noexcept { return "DIMSTYLE"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }

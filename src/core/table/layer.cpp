@@ -11,7 +11,12 @@ enum Codes
 
 using tr = cad::translator::BaseDxfTranslator;
 
-cad::Error::Code cad::table::Layer::readDXF(translator::DXFInput& reader) noexcept
+void cad::table::Layer::onUserKeeperNameChanged(const char* interfaceName, const types::String& name)
+{
+    _linetype = name;
+}
+
+cad::Error::Code cad::table::Layer::readDXF(translator::DXFInput& reader, char auxilData) noexcept
 {
     int16_t dxfCode=-1;
     std::string_view str;
@@ -20,17 +25,10 @@ cad::Error::Code cad::table::Layer::readDXF(translator::DXFInput& reader) noexce
 
     while (reader.isGood() && !stop)
     {
-        reader.readCode(&dxfCode);
+        reader.readCode(dxfCode);
 
         switch (dxfCode)
         {
-        case tr::DXF_DATA_NAMES[tr::Endtab].first:
-            reader.readValue(str);
-            if (str == tr::DXF_DATA_NAMES[tr::Endtab].second)
-                stop = true;
-            else
-                errCode = Error::Code::InvalidDataInFile;
-            break;
 
         case Codes::Color:
         {
@@ -58,7 +56,7 @@ cad::Error::Code cad::table::Layer::readDXF(translator::DXFInput& reader) noexce
             break;
 
         default:
-            errCode=TableObject::readDXF(reader);
+            stop = !TableRecord::readBaseTabRec(dxfCode, reader);
             break;
         }
     }
@@ -66,23 +64,19 @@ cad::Error::Code cad::table::Layer::readDXF(translator::DXFInput& reader) noexce
     return errCode;
 }
 
-cad::Error::Code cad::table::Layer::writeDXF(translator::DXFOutput& writer) noexcept
+cad::Error::Code cad::table::Layer::writeDXF(translator::DXFOutput& writer, char auxilData) noexcept
 {
-    Error::Code errCode = TableObject::writeDXF(writer);
+    auto errCode = writeTabRecordHeader(dxfName(), "AcDbLayerTableRecord", writer);
 
-    if (errCode!= Error::Code::NoErr)
-        return errCode;
-
-    if (writer.version() > enums::Version::R12)
-        writer.writeData(100,"AcDbLayerTableRecord");
-
-    writer.writeData(Codes::Color, color().toACI());
+    writer.writeData(Codes::Color, color().aci());
 
     writer.writeData(Codes::LineType, linetype());
 
-    writer.writeData(Codes::LineWeight, (types::int16)lineWeight());
-
-    errCode=writer.writeData(Codes::PlottingFlag, plotFlag());
+    if (writer.version() > enums::Version::R12)
+    {
+        writer.writeData(Codes::LineWeight, (types::int16)lineWeight());
+        errCode = writer.writeData(Codes::PlottingFlag, plotFlag());
+    }
 
     return errCode;
 }

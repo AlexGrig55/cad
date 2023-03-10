@@ -5,7 +5,7 @@
 
 #include <vector>
 
-class CAD_API cad::Database::Classes: public util::ConstContainer<Class>, public base::ICadObject
+class cad::Database::Classes: public util::ConstContainer<Class>, public base::ICadObject
 {
 public:
 	Classes();
@@ -16,7 +16,7 @@ public:
 protected:
 
 
-	cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-	cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+	cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+	cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 };

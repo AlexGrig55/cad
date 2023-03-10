@@ -1,7 +1,7 @@
 #pragma once
 #include "../../util/defines/defines.hpp"
 #include "../../enums/enums.hpp"
-#include "../base/cad_obj.h"
+#include "../base/base.hpp"
 
 namespace cad
 {
@@ -11,7 +11,7 @@ namespace cad
 
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData=-1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 	};
 }

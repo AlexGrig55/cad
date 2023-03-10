@@ -1,13 +1,21 @@
 #pragma once
-#include "./table_object.h"
+#include "./table_record.h"
 
 
 namespace cad::table
 {
-	class CAD_API UCS : public TableObject
+	class IUcsUser :public base::IUser
 	{
 	public:
-		enum class OrthoType:types::int16
+		virtual constexpr ~IUcsUser() noexcept = default;
+		virtual constexpr const types::String& ucs()const noexcept = 0;
+		virtual void setUcs(const types::String& name)noexcept = 0;
+	};
+
+	class CAD_API Ucs : public TableRecord<IUcsUser>
+	{
+	public:
+		enum class OrthoType :types::int16
 		{
 			No=0,Top = 1, Bot = 2, Front = 3, Back = 4, Left = 5, Right = 6
 		};
@@ -23,8 +31,9 @@ namespace cad::table
 		OrthoType		_orthoType;//71
 
 	public:
-		constexpr UCS(const types::String& name)noexcept:
-			TableObject(name),_elevation(0), _orthoType(OrthoType::No) {}
+		constexpr Ucs(const types::String& name)noexcept:
+			TableRecord(name),_elevation(0), _orthoType(OrthoType::No) {}
+		constexpr ~Ucs()noexcept = default;
 
 		constexpr auto& origin()const noexcept { return _origin; }
 		constexpr void origin(const types::Point3& val) noexcept { _origin = val; }
@@ -43,13 +52,12 @@ namespace cad::table
 
 		constexpr auto& orthoType()const noexcept { return _orthoType; }
 		constexpr void orthoType(OrthoType val) noexcept { _orthoType = val; }
-
 #pragma region overrides
 		constexpr const char* dxfName() const noexcept { return "UCS"; }
 
 	protected:
-		cad::Error::Code readDXF(translator::DXFInput& reader) noexcept override;
-		cad::Error::Code writeDXF(translator::DXFOutput& writer) noexcept override;
+		cad::Error::Code readDXF(translator::DXFInput& reader, char auxilData = -1) noexcept override;
+		cad::Error::Code writeDXF(translator::DXFOutput& writer, char auxilData = -1) noexcept override;
 #pragma endregion overrides
 	};
 }
